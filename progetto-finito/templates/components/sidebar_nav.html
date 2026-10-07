@@ -1,0 +1,42 @@
+<a href="{% url 'core:dashboard' %}" class="flex items-center gap-2 px-2 text-lg font-semibold text-fg">
+  <span class="inline-flex size-8 items-center justify-center rounded-lg bg-indigo-600 text-sm text-indigo-50">DV</span>
+  DjangoVault
+</a>
+
+<nav class="mt-8 flex-1 space-y-1" aria-label="Navigazione principale">
+  {# Le altre voci (Ricerca...) arriveranno con le rispettive fasi. #}
+  <a href="{% url 'core:dashboard' %}"
+     class="flex items-center rounded-lg px-3 py-2 text-sm font-medium {% if request.resolver_match.view_name == 'core:dashboard' %}bg-surface-2 text-fg{% else %}text-muted hover:bg-surface hover:text-fg{% endif %}">
+    Dashboard
+  </a>
+  <a href="{% url 'documents:list' %}"
+     class="flex items-center rounded-lg px-3 py-2 text-sm font-medium {% if request.resolver_match.app_name == 'documents' and request.resolver_match.url_name != 'categories' and request.resolver_match.url_name != 'category_delete' %}bg-surface-2 text-fg{% else %}text-muted hover:bg-surface hover:text-fg{% endif %}">
+    Documenti
+  </a>
+  <a href="{% url 'assistant:index' %}"
+     class="flex items-center rounded-lg px-3 py-2 text-sm font-medium {% if request.resolver_match.app_name == 'assistant' %}bg-surface-2 text-fg{% else %}text-muted hover:bg-surface hover:text-fg{% endif %}">
+    Chiedi
+  </a>
+  {% if request.user.is_staff %}
+  <a href="{% url 'documents:categories' %}"
+     class="flex items-center rounded-lg px-3 py-2 text-sm font-medium {% if request.resolver_match.url_name == 'categories' %}bg-surface-2 text-fg{% else %}text-muted hover:bg-surface hover:text-fg{% endif %}">
+    Categorie
+  </a>
+  {% endif %}
+  {% if request.user.is_superuser %}
+  <a href="{% url 'core:registro' %}"
+     class="flex items-center rounded-lg px-3 py-2 text-sm font-medium {% if request.resolver_match.url_name == 'registro' %}bg-surface-2 text-fg{% else %}text-muted hover:bg-surface hover:text-fg{% endif %}">
+    Registro
+  </a>
+  {% endif %}
+</nav>
+
+<div class="border-t border-line pt-4">
+  <p class="truncate px-3 text-sm text-fg">{{ request.user.get_full_name|default:request.user.username }}</p>
+  <form method="post" action="{% url 'accounts:logout' %}" class="mt-2">
+    {% csrf_token %}
+    <button type="submit" class="w-full rounded-lg px-3 py-2 text-left text-sm text-muted hover:bg-surface hover:text-fg">
+      Esci
+    </button>
+  </form>
+</div>

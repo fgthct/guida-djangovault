@@ -1,0 +1,27 @@
+{% extends "app.html" %}
+{% block title %}{{ conversazione.title|truncatechars:50 }} · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'assistant:index' %}" class="hover:text-fg">Chiedi</a> / {{ conversazione.title|truncatechars:40 }}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="min-w-0">
+      <h1 class="truncate text-xl font-semibold tracking-tight">{{ conversazione.title }}</h1>
+      {% if conversazione.category %}<p class="text-xs text-muted">Solo nella categoria «{{ conversazione.category.name }}»</p>{% endif %}
+      {% if conversazione.document %}<p class="text-xs text-muted">Domande su <a href="{{ conversazione.document.get_absolute_url }}" class="text-indigo-300 hover:text-indigo-200">{{ conversazione.document.title }}</a></p>{% endif %}
+    </div>
+    <a href="{% url 'assistant:new' %}{% if conversazione.document %}?documento={{ conversazione.document_id }}{% endif %}" class="rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-sm text-fg hover:bg-line">Nuova conversazione</a>
+  </div>
+
+  {% if not configurato %}<div class="mt-4">{% include "components/alert.html" with tag="warning" testo="L'assistente non è configurato: manca ANTHROPIC_API_KEY nel file .env." %}</div>{% endif %}
+
+  <div id="messaggi" class="mt-6 space-y-4">
+    {% include "assistant/_messaggi.html" %}
+  </div>
+
+  <div class="sticky bottom-0 mt-6 bg-page/95 pb-4 pt-3 backdrop-blur">
+    {% url 'assistant:ask' conversazione.pk as azione %}
+    {% include "assistant/_form.html" with azione=azione htmx=True limite=limite %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "app.html" %}
+
+{% block title %}Elimina · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'documents:list' %}" class="hover:text-fg">Documenti</a> / Elimina{% endblock %}
+
+{% block content %}
+<div class="max-w-lg rounded-2xl border border-red-500/30 bg-surface p-6 shadow-lg shadow-black/20">
+  <h1 class="text-xl font-semibold">Eliminare «{{ documento.title }}»?</h1>
+  <p class="mt-2 text-sm text-muted">Il documento e tutti i suoi file verranno rimossi. L'operazione non si può annullare.</p>
+  <form method="post" class="mt-6 flex gap-3">
+    {% csrf_token %}
+    <button type="submit" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-red-50 hover:bg-red-500">Elimina definitivamente</button>
+    <a href="{{ documento.get_absolute_url }}" class="rounded-lg border border-line px-4 py-2 text-sm text-muted hover:bg-surface-2">Annulla</a>
+  </form>
+</div>
+{% endblock %}

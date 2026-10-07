@@ -1,0 +1,53 @@
+{% extends "app.html" %}
+
+{% block title %}Categorie · DjangoVault{% endblock %}
+{% block header %}Categorie{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold tracking-tight">Categorie</h1>
+
+<div id="pannello-categorie" class="mt-6 max-w-2xl">
+{% partialdef pannello inline %}
+  <div id="pannello" class="space-y-4">
+    <form method="post" action="{% url 'documents:categories' %}" class="flex items-start gap-3"
+          hx-post="{% url 'documents:categories' %}" hx-target="#pannello" hx-swap="outerHTML">
+      {% csrf_token %}
+      <div class="flex-1">
+        {{ form.name }}
+        {% for errore in form.name.errors %}<p class="mt-1 text-sm text-red-400">{{ errore }}</p>{% endfor %}
+      </div>
+      <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">Aggiungi</button>
+    </form>
+
+    <ul class="divide-y divide-line rounded-2xl border border-line bg-surface">
+      {% for c in categorie %}
+      <li class="px-4 py-3">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium">{{ c.name }}</p>
+            <p class="text-xs text-muted">{{ c.n }} document{{ c.n|pluralize:"o,i" }}</p>
+          </div>
+          <form method="post" action="{% url 'documents:category_delete' c.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="text-sm text-red-400 hover:text-red-300"
+                    hx-post="{% url 'documents:category_delete' c.pk %}" hx-target="closest li" hx-swap="outerHTML"
+                    hx-confirm="Eliminare la categoria «{{ c.name }}»?">Elimina</button>
+          </form>
+        </div>
+        <form method="post" action="{% url 'documents:category_describe' c.pk %}" class="mt-2 flex gap-2">
+          {% csrf_token %}
+          <label class="sr-only" for="desc-{{ c.pk }}">Descrizione di {{ c.name }}</label>
+          <input type="text" id="desc-{{ c.pk }}" name="descrizione" value="{{ c.description }}" maxlength="300"
+                 placeholder="Cosa ci va dentro? (aiuta la classificazione automatica)"
+                 class="min-w-0 flex-1 rounded-lg border border-line bg-rail px-3 py-1.5 text-sm text-fg placeholder:text-muted/60 focus:border-indigo-400 focus:outline-none">
+          <button type="submit" class="rounded-lg border border-line px-3 py-1.5 text-sm text-muted hover:bg-surface-2 hover:text-fg">Salva</button>
+        </form>
+      </li>
+      {% empty %}
+      <li class="px-4 py-6 text-center text-sm text-muted">Nessuna categoria.</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endpartialdef %}
+</div>
+{% endblock %}

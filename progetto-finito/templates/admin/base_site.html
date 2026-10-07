@@ -1,0 +1,7 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{# Aggiunge il tema scuro dell'app all'admin di Django (caricato dopo i CSS dell'admin). #}
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/admin_dark.css' %}">
+{% endblock %}

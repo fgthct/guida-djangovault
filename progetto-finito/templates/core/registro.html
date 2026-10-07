@@ -1,0 +1,17 @@
+{% extends "app.html" %}
+
+{% block title %}Registro · DjangoVault{% endblock %}
+{% block header %}Registro delle operazioni{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold tracking-tight">Registro delle operazioni</h1>
+<p class="mt-1 text-sm text-muted">Visibile solo ai superutenti. Le voci non si possono modificare né cancellare.</p>
+<form method="get" class="mt-6">
+  <label for="gruppo" class="sr-only">Filtra</label>
+  <select id="gruppo" name="gruppo" class="rounded-lg border border-line bg-rail px-3 py-2 text-fg focus:border-indigo-400 focus:outline-none">
+    {% for valore, nome in gruppi %}<option value="{{ valore }}" {% if gruppo == valore %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+  </select>
+  <button type="submit" class="ml-2 rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm text-fg hover:bg-line">Filtra</button>
+</form>
+<div class="mt-6">{% include "components/audit_table.html" with pagina=pagina mostra_oggetto=True %}</div>
+{% endblock %}

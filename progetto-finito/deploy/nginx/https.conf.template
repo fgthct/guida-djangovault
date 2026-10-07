@@ -1,0 +1,31 @@
+# Modo HTTPS: Nginx termina il TLS. Certificato e chiave nella cartella DV_CERTS_DIR: fullchain.pem e privkey.pem
+# (per esempio quelli di Let's Encrypt: vedi README, «Produzione»).
+include /etc/nginx/snippets/dv-common.conf;
+
+map $scheme $dv_scheme {
+    default https;  # qui si arriva solo da TLS
+}
+
+server {
+    listen 80 default_server;
+    server_name ${DV_SERVER_NAME};
+    location = /nginx-health { access_log off; return 200 "ok\n"; }
+    location /.well-known/acme-challenge/ { root /var/www/acme; }
+    location / { return 301 https://$host$request_uri; }
+}
+
+server {
+    listen 443 ssl default_server;
+    http2 on;
+    server_name ${DV_SERVER_NAME};
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+    client_max_body_size ${DV_NGINX_MAX_BODY};
+
+    include /etc/nginx/snippets/dv-locations.conf;
+}

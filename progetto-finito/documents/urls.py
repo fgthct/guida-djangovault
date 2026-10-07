@@ -1,0 +1,47 @@
+from django.urls import path
+
+from . import views, views_classificazione
+
+app_name = "documents"
+
+urlpatterns = [
+    path("documenti/", views.document_list, name="list"),
+    path("documenti/azione/", views.azione_multipla, name="azione_multipla"),
+    path("documenti/ricerche/salva/", views.ricerca_salva, name="ricerca_salva"),
+    path("documenti/ricerche/<int:pk>/elimina/", views.ricerca_elimina, name="ricerca_elimina"),
+    path("documenti/rapida/", views.ricerca_rapida, name="rapida"),
+    path("documenti/nuovo/", views.document_create, name="create"),
+    path("documenti/carica/", views.document_upload, name="upload"),
+    path("documenti/carica/file/", views.document_upload_file, name="upload_file"),
+    path("documenti/scansiona/", views.document_scan, name="scan"),
+    path("documenti/da-smistare/", views_classificazione.smistamento, name="smistamento"),
+    path("documenti/da-smistare/accetta-tutte/", views_classificazione.proposte_accetta_tutte, name="proposte_accetta_tutte"),
+    path("documenti/da-smistare/<int:pk>/accetta/", views_classificazione.proposta_accetta, name="proposta_accetta"),
+    path("documenti/da-smistare/<int:pk>/rifiuta/", views_classificazione.proposta_rifiuta, name="proposta_rifiuta"),
+    path("documenti/da-smistare/<int:pk>/annulla/", views_classificazione.proposta_annulla, name="proposta_annulla"),
+    path("documenti/<int:pk>/classifica/", views_classificazione.document_classifica, name="classifica"),
+    path("documenti/<int:pk>/", views.document_detail, name="detail"),
+    path("documenti/<int:pk>/modifica/", views.document_edit, name="edit"),
+    path("documenti/<int:pk>/consenso-ia/", views.document_ai_consent, name="ai_consent"),
+    path("documenti/<int:pk>/elimina/", views.document_delete, name="delete"),
+    path("documenti/<int:pk>/scarica/", views.document_download, name="download"),
+    path("documenti/<int:pk>/versioni/nuova/", views.version_create, name="version_create"),
+    path("documenti/<int:pk>/versioni/<int:numero>/scarica/", views.version_download, name="version_download"),
+    path("documenti/<int:pk>/versioni/<int:numero>/apri/", views.version_open, name="version_open"),
+    path("documenti/<int:pk>/versioni/<int:numero>/ripristina/", views.version_restore, name="version_restore"),
+    path("documenti/<int:pk>/versioni/<int:numero>/elaborazione/", views.version_processing, name="version_processing"),
+    path("documenti/<int:pk>/versioni/<int:numero>/rielabora/", views.version_reprocess, name="version_reprocess"),
+    path("documenti/<int:pk>/versioni/<int:numero>/reindicizza/", views.version_reindex, name="version_reindex"),
+    path("documenti/<int:pk>/versioni/<int:numero>/anteprima/", views.version_preview, name="version_preview"),
+    path("documenti/<int:pk>/revisione/", views.review_start, name="review_start"),
+    path("documenti/<int:pk>/revisione/riga/", views.review_row, name="review_row"),
+    path("documenti/<int:pk>/revisione/ritira/", views.review_withdraw, name="review_withdraw"),
+    path("documenti/<int:pk>/revisione/<str:esito>/", views.review_decide, name="review_decide"),
+    path("documenti/<int:pk>/stato/<str:stato>/", views.document_transition, name="transition"),
+    path("documenti/<int:pk>/attivita/", views.document_history, name="history"),
+    path("documenti/<int:pk>/condivisione/", views.document_share, name="share"),
+    path("documenti/<int:pk>/condivisione/<int:perm_pk>/revoca/", views.share_revoke, name="share_revoke"),
+    path("categorie/", views.category_list, name="categories"),
+    path("categorie/<int:pk>/descrizione/", views.category_describe, name="category_describe"),
+    path("categorie/<int:pk>/elimina/", views.category_delete, name="category_delete"),
+]

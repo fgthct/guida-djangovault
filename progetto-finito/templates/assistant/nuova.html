@@ -1,0 +1,15 @@
+{% extends "app.html" %}
+{% block title %}Chiedi · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'assistant:index' %}" class="hover:text-fg">Chiedi</a> / Nuova domanda{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold tracking-tight">{% if documento %}Chiedi a «{{ documento.title }}»{% else %}Nuova domanda{% endif %}</h1>
+{% if not configurato %}
+<div class="mt-4 max-w-2xl">{% include "components/alert.html" with tag="warning" testo="L'assistente non è configurato: manca ANTHROPIC_API_KEY nel file .env." %}</div>
+{% endif %}
+<div class="mt-6 max-w-3xl">
+  {% url 'assistant:new' as azione %}
+  {% include "assistant/_form.html" with azione=azione limite=1000 %}
+  <p class="mt-4 text-xs text-muted">Le risposte usano solo i passaggi dei documenti che puoi leggere e per i quali c'è il consenso all'assistente IA. Quei passaggi vengono inviati ad Anthropic per formulare la risposta.</p>
+</div>
+{% endblock %}

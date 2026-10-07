@@ -1,0 +1,80 @@
+{% extends "app.html" %}
+
+{% block title %}Dashboard · DjangoVault{% endblock %}
+{% block header %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold tracking-tight">
+  Ciao {{ request.user.get_short_name|default:request.user.username }}
+</h1>
+<p class="mt-1 text-muted">Hai accesso a {{ totale_documenti }} document{{ totale_documenti|pluralize:"o,i" }}.</p>
+
+{% if n_da_rivedere %}
+<section class="mt-8 max-w-2xl rounded-2xl border border-amber-500/30 bg-surface shadow-lg shadow-black/20" aria-labelledby="approva-titolo">
+  <div class="flex items-center justify-between border-b border-line px-5 py-4">
+    <h2 id="approva-titolo" class="text-base font-semibold">Tocca a te ({{ n_da_rivedere }})</h2>
+    <a href="{% url 'documents:list' %}" class="text-sm text-indigo-300 hover:text-indigo-200">Vedi tutti</a>
+  </div>
+  <ul class="divide-y divide-line">
+    {% for d in da_rivedere %}
+    <li class="flex items-center justify-between gap-4 px-5 py-3">
+      <a href="{{ d.round.document.get_absolute_url }}" class="min-w-0 truncate text-sm font-medium hover:text-indigo-300">{{ d.round.document.title }}</a>
+      <span class="shrink-0 text-xs text-muted">di {{ d.round.document.owner.get_full_name|default:d.round.document.owner.username }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="mt-8 max-w-2xl rounded-2xl border border-line bg-surface shadow-lg shadow-black/20" aria-labelledby="recenti-titolo">
+  <div class="flex items-center justify-between border-b border-line px-5 py-4">
+    <h2 id="recenti-titolo" class="text-base font-semibold">Ultimi documenti</h2>
+    <a href="{% url 'documents:list' %}" class="text-sm text-indigo-300 hover:text-indigo-200">Vedi tutti</a>
+  </div>
+  <ul class="divide-y divide-line">
+    {% for d in recenti %}
+    <li class="flex items-center justify-between gap-4 px-5 py-3">
+      <a href="{{ d.get_absolute_url }}" class="min-w-0 truncate text-sm font-medium hover:text-indigo-300">{{ d.title }}</a>
+      <span class="shrink-0 text-xs text-muted">{{ d.updated_at|date:"d/m/Y H:i" }}</span>
+    </li>
+    {% empty %}
+    <li class="px-5 py-4 text-sm text-muted">Nessun documento. <a href="{% url 'documents:create' %}" class="text-indigo-300 hover:text-indigo-200">Carica il primo</a>.</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="mt-8 max-w-2xl rounded-2xl border border-line bg-surface shadow-lg shadow-black/20" aria-labelledby="servizi-titolo">
+  <div class="flex items-center justify-between border-b border-line px-5 py-4">
+    <h2 id="servizi-titolo" class="text-base font-semibold">Stato dei servizi</h2>
+    <span id="servizi-indicatore" class="htmx-indicator text-xs text-muted">aggiornamento…</span>
+  </div>
+
+  {# Pattern del progetto: HTMX chiede un frammento HTML a Django e lo sostituisce nel DOM. #}
+  <div id="servizi"
+       hx-get="{% url 'core:stato_servizi' %}"
+       hx-trigger="load, every 30s"
+       hx-indicator="#servizi-indicatore"
+       hx-swap="innerHTML">
+    <p class="px-5 py-4 text-sm text-muted">Caricamento…</p>
+  </div>
+</section>
+
+{# Partial di Django 6: si richiama con render(request, "core/dashboard.html#servizi", ...) #}
+{% partialdef servizi %}
+<ul class="divide-y divide-line">
+  {% for s in servizi %}
+    <li class="flex items-center justify-between gap-4 px-5 py-3">
+      <div>
+        <p class="text-sm font-medium">{{ s.nome }}</p>
+        <p class="text-xs text-muted">{{ s.dettaglio }}</p>
+      </div>
+      {% if s.ok %}
+        {% include "components/badge.html" with tone="ok" testo="Operativo" %}
+      {% else %}
+        {% include "components/badge.html" with tone="error" testo="Problema" %}
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+{% endpartialdef %}
+{% endblock %}

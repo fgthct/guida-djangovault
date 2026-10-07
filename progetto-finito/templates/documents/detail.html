@@ -1,0 +1,237 @@
+{% extends "app.html" %}
+
+{% block title %}{{ documento.title }} · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'documents:list' %}" class="hover:text-fg">Documenti</a> / {{ documento.title|truncatechars:40 }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-start justify-between gap-4">
+  <div class="min-w-0">
+    <h1 class="break-words text-2xl font-semibold tracking-tight">{{ documento.title }}</h1>
+    <div class="mt-2 flex flex-wrap items-center gap-2">
+      {% include "components/status_badge.html" with documento=documento %}
+      {% if documento.category %}{% include "components/badge.html" with tone="neutral" testo=documento.category.name %}{% endif %}
+    </div>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% if versione %}<a href="{% url 'documents:download' documento.pk %}" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">Scarica</a>{% endif %}
+    {% if documento.ai_allowed and assistente_attivo and versione %}<a href="{% url 'assistant:new' %}?documento={{ documento.pk }}" class="rounded-lg border border-indigo-400/40 bg-indigo-500/10 px-4 py-2 text-sm text-indigo-200 hover:bg-indigo-500/20">Chiedi</a>{% endif %}
+    {% if puo_modificare and not documento.category_id %}
+    <form method="post" action="{% url 'documents:classifica' documento.pk %}">{% csrf_token %}<button type="submit" class="rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm text-fg hover:bg-line">Suggerisci categoria</button></form>
+    {% endif %}
+    {% if puo_modificare %}
+    <a href="{% url 'documents:version_create' documento.pk %}" class="rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm text-fg hover:bg-line">Nuova versione</a>
+    <a href="{% url 'documents:edit' documento.pk %}" class="rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm text-fg hover:bg-line">Modifica</a>
+    {% endif %}
+    {% if puo_amministrare %}
+    <a href="{% url 'documents:history' documento.pk %}" class="rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm text-fg hover:bg-line">Attività</a>
+    <a href="{% url 'documents:share' documento.pk %}" class="rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm text-fg hover:bg-line">Condividi</a>
+    <a href="{% url 'documents:delete' documento.pk %}" class="rounded-lg border border-red-500/30 px-4 py-2 text-sm text-red-300 hover:bg-red-500/10">Elimina</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if nessuna_proposta %}
+<div class="mt-6" data-nessuna-proposta>{% include "components/alert.html" with tag="info" testo=nessuna_proposta %} <p class="mt-2 text-xs text-muted">Scegli tu la categoria da «Modifica»: l'archivio impara dalle tue scelte.</p></div>
+{% endif %}
+
+{% if bloccato %}
+<div class="mt-6">{% include "components/alert.html" with tag="info" testo="Il documento non è in bozza, quindi è bloccato: per modificarlo o caricare una nuova versione va riportato in bozza." %}</div>
+{% endif %}
+
+{% if puo_inviare or giro %}
+<section class="mt-6 rounded-2xl border border-line bg-surface p-5" aria-labelledby="revisione-titolo">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 id="revisione-titolo" class="text-base font-semibold">Revisione{% if giro %} · giro {{ giro.number }} ({{ giro.sequential|yesno:"in sequenza,libera" }}){% endif %}</h2>
+    <div class="flex flex-wrap gap-2">
+      {% if puo_inviare %}<a href="{% url 'documents:review_start' documento.pk %}" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">Invia in revisione</a>{% endif %}
+      {% if puo_ritirare %}<a href="{% url 'documents:review_withdraw' documento.pk %}" class="rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm text-fg hover:bg-line">Ritira</a>{% endif %}
+    </div>
+  </div>
+  {% if giro.message %}
+  <div class="mt-4 rounded-lg border border-line bg-surface-2 p-3 text-sm">
+    <p class="text-xs text-muted">Messaggio di {{ giro.started_by.get_full_name|default:giro.started_by.username }}</p>
+    <p class="mt-1 whitespace-pre-line text-fg">{{ giro.message }}</p>
+  </div>
+  {% endif %}
+  {% if mio_passo and not mio_turno %}<p class="mt-3 text-sm text-amber-300">Sei tra i revisori, ma non è ancora il tuo turno: riceverai un avviso.</p>{% endif %}
+  {% if giro %}
+  <ol class="mt-4 divide-y divide-line text-sm">
+    {% for p in giro.steps.all %}
+    <li class="flex flex-wrap items-start justify-between gap-2 py-2">
+      <div class="min-w-0">
+        <span class="text-muted">{{ p.position }}.</span>
+        <span class="font-medium">{{ p.reviewer.get_full_name|default:p.reviewer.username }}</span>
+        {% if p.label %}<span class="text-muted">· {{ p.label }}</span>{% endif %}
+        {% if p.note %}<p class="text-xs text-muted">«{{ p.note }}»</p>{% endif %}
+      </div>
+      {% include "components/badge.html" with tone=p.tono testo=p.stato %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% if giro.closing_note and not giro_in_corso %}<p class="mt-3 text-xs text-muted">Esito: {{ giro.get_outcome_display }} — {{ giro.closing_note }}</p>{% endif %}
+  {% endif %}
+  {% if mio_passo and mio_turno %}
+  <form method="post" class="mt-4 rounded-lg border border-amber-500/30 bg-surface-2 p-4" aria-labelledby="risposta-titolo">
+    {% csrf_token %}
+    <h3 id="risposta-titolo" class="text-sm font-semibold">La tua risposta</h3>
+    <label for="nota-risposta" class="mt-3 mb-1 block text-xs text-muted">Commento (facoltativo se approvi, obbligatorio se rimandi)</label>
+    <textarea id="nota-risposta" name="nota" rows="3" maxlength="500" class="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg placeholder:text-muted" placeholder="es. Va bene così / Manca l'allegato B / Sistemare il capitolo 3"></textarea>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <button type="submit" formaction="{% url 'documents:review_decide' documento.pk 'approva' %}" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-50 hover:bg-emerald-500">Approva</button>
+      <button type="submit" formaction="{% url 'documents:review_decide' documento.pk 'rimanda' %}" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-red-50 hover:bg-red-500">Rimanda al proprietario</button>
+    </div>
+  </form>
+  {% endif %}
+  {% if giri_precedenti %}
+  <details class="mt-4 text-sm">
+    <summary class="cursor-pointer text-muted hover:text-fg">Giri precedenti ({{ giri_precedenti|length }})</summary>
+    <ul class="mt-2 space-y-3">
+      {% for g in giri_precedenti %}
+      <li class="rounded-lg border border-line p-3">
+        <p class="text-xs text-muted">Giro {{ g.number }} · {{ g.get_outcome_display }}{% if g.closing_note %} — {{ g.closing_note }}{% endif %}</p>
+        {% if g.message %}<p class="mt-1 text-xs text-muted">Messaggio: «{{ g.message }}»</p>{% endif %}
+        <p class="mt-1">{% for p in g.steps.all %}{{ p.reviewer.get_full_name|default:p.reviewer.username }} ({{ p.get_decision_display }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if transizioni %}
+<section class="mt-6 rounded-2xl border border-line bg-surface p-5" aria-labelledby="stato-titolo">
+  <h2 id="stato-titolo" class="text-base font-semibold">Stato: {{ documento.get_status_display }}</h2>
+  <div class="mt-3 flex flex-wrap gap-2">
+    {% for t in transizioni %}
+    <a href="{% url 'documents:transition' documento.pk t.a %}" class="rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm text-fg hover:bg-line">{{ t.etichetta }}</a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div class="mt-8 grid gap-6 lg:grid-cols-3">
+  <section class="self-start rounded-2xl border border-line bg-surface p-5 lg:col-span-2">
+    <h2 class="text-base font-semibold">Descrizione</h2>
+    {% if documento.description %}<p class="mt-2 whitespace-pre-line text-sm text-fg">{{ documento.description }}</p>
+    {% else %}<p class="mt-2 text-sm text-muted">Nessuna descrizione.</p>{% endif %}
+  </section>
+
+  <section class="self-start rounded-2xl border border-line bg-surface p-5">
+    <h2 class="text-base font-semibold">Dettagli</h2>
+    <dl class="mt-3 space-y-3 text-sm">
+      <div><dt class="text-muted">Proprietario</dt><dd>{{ documento.owner.get_full_name|default:documento.owner.username }}</dd></div>
+      <div><dt class="text-muted">Il tuo accesso</dt><dd>{% if documento.owner_id == request.user.id %}Proprietario{% elif request.user.is_superuser %}Superutente{% else %}{% if livello == 10 %}Lettura{% elif livello == 20 %}Modifica{% else %}Amministrazione{% endif %}{% endif %}</dd></div>
+      <div>
+        <dt class="text-muted">Assistente IA</dt>
+        <dd>
+          {% if documento.ai_allowed %}<span class="text-emerald-300">Può leggere il documento</span>{% else %}<span class="text-muted">Non consentito</span>{% endif %}
+          {% if puo_amministrare %}
+          <form method="post" action="{% url 'documents:ai_consent' documento.pk %}" class="mt-1">
+            {% csrf_token %}
+            <input type="hidden" name="consenti" value="{% if documento.ai_allowed %}0{% else %}1{% endif %}">
+            <button type="submit" class="text-xs text-indigo-300 hover:text-indigo-200">{% if documento.ai_allowed %}Revoca il consenso{% else %}Consenti{% endif %}</button>
+          </form>
+          {% endif %}
+        </dd>
+      </div>
+      <div><dt class="text-muted">Creato il</dt><dd>{{ documento.created_at|date:"d/m/Y H:i" }}</dd></div>
+      <div><dt class="text-muted">Aggiornato il</dt><dd>{{ documento.updated_at|date:"d/m/Y H:i" }}</dd></div>
+      {% if versione %}
+      <div><dt class="text-muted">File</dt><dd class="break-all">{{ versione.original_name }}</dd></div>
+      <div><dt class="text-muted">Dimensione</dt><dd>{{ versione.size|filesizeformat }}</dd></div>
+      <div><dt class="text-muted">Versione</dt><dd>{{ versione.version_number }}</dd></div>
+      <div><dt class="text-muted">SHA-256</dt><dd class="break-all font-mono text-xs text-muted">{{ versione.checksum }}</dd></div>
+      {% endif %}
+    </dl>
+  </section>
+</div>
+
+{% if versione and versione.preview %}
+<section class="mt-6 rounded-2xl border border-line bg-surface p-5" aria-labelledby="anteprima-titolo" x-data="anteprima">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 id="anteprima-titolo" class="text-base font-semibold">Anteprima</h2>
+    {% if versione.anteprima_e_pagina %}
+    <label class="flex items-center gap-2 text-xs text-muted">
+      <input type="checkbox" class="rounded border-line bg-rail" x-model="originale">
+      Colori originali (pagina chiara)
+    </label>
+    {% endif %}
+  </div>
+  <img src="{% url 'documents:version_preview' documento.pk versione.version_number %}?v={{ versione.processed_at|date:'U' }}"
+       alt="Anteprima della prima pagina di {{ versione.original_name }}"
+       width="720" loading="lazy"
+       class="mt-4 max-h-[36rem] w-auto max-w-full rounded-lg border border-line"
+       {% if versione.anteprima_e_pagina %}x-bind:class="classe"{% endif %}>
+</section>
+{% endif %}
+
+{% if versione and versione.extracted_text %}
+<details class="mt-6 rounded-2xl border border-line bg-surface">
+  <summary class="cursor-pointer px-5 py-4 text-base font-semibold">
+    Testo estratto
+    <span class="ml-2 text-xs font-normal text-muted">{{ versione.extracted_text|length }} caratteri{% if versione.ocr_used %} · da OCR, può contenere errori{% endif %}</span>
+  </summary>
+  <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words border-t border-line px-5 py-4 text-xs text-fg">{{ versione.extracted_text|slice:":5000" }}{% if versione.extracted_text|length > 5000 %}
+
+… (mostrati i primi 5000 caratteri)</pre>{% else %}</pre>{% endif %}
+</details>
+{% endif %}
+
+{% if simili %}
+<section class="mt-6 rounded-2xl border border-line bg-surface p-5" aria-labelledby="simili-titolo" data-simili>
+  <h2 id="simili-titolo" class="text-base font-semibold">Documenti simili</h2>
+  <ul class="mt-3 divide-y divide-line text-sm">
+    {% for s in simili %}
+    <li class="flex items-center justify-between gap-3 py-2">
+      <a href="{% url 'documents:detail' s.id %}" class="min-w-0 truncate text-fg hover:text-indigo-300">{{ s.titolo }}</a>
+      <span class="shrink-0 text-xs text-muted">{% if s.categoria %}{{ s.categoria }} · {% endif %}{% if s.quasi_uguale %}<span class="text-amber-300">quasi identico</span>{% else %}{{ s.sim|floatformat:2 }}{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="mt-6 overflow-hidden rounded-2xl border border-line bg-surface" aria-labelledby="cronologia-titolo">
+  <div class="border-b border-line px-5 py-4">
+    <h2 id="cronologia-titolo" class="text-base font-semibold">Cronologia versioni</h2>
+  </div>
+  <div class="overflow-x-auto">
+  <table class="w-full text-left text-sm">
+    <thead class="border-b border-line text-xs uppercase tracking-wide text-muted">
+      <tr>
+        <th scope="col" class="px-5 py-3 font-medium">Versione</th>
+        <th scope="col" class="px-5 py-3 font-medium">File</th>
+        <th scope="col" class="hidden px-5 py-3 font-medium md:table-cell">Autore</th>
+        <th scope="col" class="hidden px-5 py-3 font-medium sm:table-cell">Data</th>
+        <th scope="col" class="px-5 py-3 text-right font-medium"><span class="sr-only">Azioni</span></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-line">
+      {% for v in versioni %}
+      <tr>
+        <td class="whitespace-nowrap px-5 py-3 align-top">
+          <span class="font-medium">v{{ v.version_number }}</span>
+          {% if v.pk == documento.current_version_id %}{% include "components/badge.html" with tone="ok" testo="Corrente" %}{% endif %}
+        </td>
+        <td class="px-5 py-3 align-top">
+          <p class="break-all">{{ v.original_name }} <span class="text-xs text-muted">· {{ v.size|filesizeformat }}</span></p>
+          {% if v.comment %}<p class="text-xs text-muted">{{ v.comment }}</p>{% endif %}
+          {% if v.restored_from %}<p class="text-xs text-sky-300">Ripristino della v{{ v.restored_from.version_number }}</p>{% endif %}
+          {% include "components/elaborazione.html" with v=v documento=documento puo_rielaborare=puo_rielaborare %}
+        </td>
+        <td class="hidden px-5 py-3 align-top text-muted md:table-cell">{{ v.created_by.get_full_name|default:v.created_by.username }}</td>
+        <td class="hidden whitespace-nowrap px-5 py-3 align-top text-muted sm:table-cell">{{ v.created_at|date:"d/m/Y H:i" }}</td>
+        <td class="whitespace-nowrap px-5 py-3 text-right align-top">
+          <a href="{% url 'documents:version_download' documento.pk v.version_number %}" class="text-muted hover:text-fg">Scarica</a>
+          {% if puo_modificare and v.pk != documento.current_version_id %}
+          <a href="{% url 'documents:version_restore' documento.pk v.version_number %}" class="ml-3 text-indigo-300 hover:text-indigo-200">Ripristina</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

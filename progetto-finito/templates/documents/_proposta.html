@@ -1,0 +1,35 @@
+{# Una riga della pagina «Da smistare». p = ClassificationSuggestion; categorie = tutte le categorie. #}
+<li id="proposta-{{ p.pk }}" class="px-5 py-4">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="min-w-0 flex-1">
+      <a href="{{ p.document.get_absolute_url }}" class="break-words font-medium hover:text-indigo-300">{{ p.document.title }}</a>
+      {% if p.status == "automatica" %}
+      <p class="mt-0.5 text-xs text-muted">Assegnato in automatico a <strong class="text-fg">{{ p.category.name }}</strong> · fiducia {{ p.fiducia_percento }}%</p>
+      {% endif %}
+      {% if p.reason %}<p class="mt-0.5 text-xs text-muted">{{ p.reason }}</p>{% endif %}
+      {% if p.summary %}<p class="mt-2 text-sm text-fg/80">{{ p.summary }}</p>{% endif %}
+      {% if p.keywords %}<p class="mt-1 flex flex-wrap gap-1.5">{% for k in p.keywords %}<span class="rounded-full border border-line px-2 py-0.5 text-xs text-muted">{{ k }}</span>{% endfor %}</p>{% endif %}
+      {% if p.neighbors %}<p class="mt-2 text-xs text-muted">Simili: {% for n in p.neighbors|slice:":3" %}<a href="{% url 'documents:detail' n.id %}" class="hover:text-fg">{{ n.titolo }}</a> ({{ n.categoria }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+    </div>
+    {% if p.status == "automatica" %}
+    <form method="post" action="{% url 'documents:proposta_annulla' p.pk %}" hx-post="{% url 'documents:proposta_annulla' p.pk %}" hx-target="#proposta-{{ p.pk }}" hx-swap="outerHTML">
+      {% csrf_token %}
+      <button type="submit" class="rounded-lg border border-line px-3 py-1.5 text-sm text-muted hover:bg-surface-2 hover:text-fg">Annulla</button>
+    </form>
+    {% else %}
+    <form method="post" action="{% url 'documents:proposta_accetta' p.pk %}" hx-post="{% url 'documents:proposta_accetta' p.pk %}" hx-target="#proposta-{{ p.pk }}" hx-swap="outerHTML"
+          class="flex flex-wrap items-center gap-2">
+      {% csrf_token %}
+      <span class="text-xs text-muted" title="Fiducia della proposta">{{ p.fiducia_percento }}%</span>
+      <label class="sr-only" for="cat-{{ p.pk }}">Categoria</label>
+      <select id="cat-{{ p.pk }}" name="categoria" class="rounded-lg border border-line bg-rail px-2 py-1.5 text-sm text-fg focus:border-indigo-400 focus:outline-none">
+        {% if p.new_category_name %}<option value="" selected>Crea «{{ p.new_category_name }}»</option>{% endif %}
+        {% for c in categorie %}<option value="{{ c.pk }}" {% if c.pk == p.category_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">Accetta</button>
+      <button type="submit" formaction="{% url 'documents:proposta_rifiuta' p.pk %}" hx-post="{% url 'documents:proposta_rifiuta' p.pk %}"
+              class="rounded-lg border border-line px-3 py-1.5 text-sm text-muted hover:bg-surface-2 hover:text-fg">Ignora</button>
+    </form>
+    {% endif %}
+  </div>
+</li>

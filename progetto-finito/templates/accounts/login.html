@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Accesso · DjangoVault{% endblock %}
+
+{% block body %}
+<main class="flex min-h-full items-center justify-center px-4 py-12">
+  <div class="w-full max-w-sm">
+    <div class="mb-8 text-center">
+      <span class="inline-flex size-12 items-center justify-center rounded-xl bg-indigo-600 text-lg font-semibold text-indigo-50">DV</span>
+      <h1 class="mt-4 text-2xl font-semibold tracking-tight">DjangoVault</h1>
+      <p class="mt-1 text-sm text-muted">Accedi per continuare</p>
+    </div>
+
+    <form method="post" class="space-y-5 rounded-2xl border border-line bg-surface p-6 shadow-lg shadow-black/20">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      {% if form.non_field_errors %}
+        {% for errore in form.non_field_errors %}
+          {% include "components/alert.html" with tag="error" testo=errore %}
+        {% endfor %}
+      {% endif %}
+
+      {% for campo in form %}
+        <div>
+          <label for="{{ campo.id_for_label }}" class="mb-1 block text-sm font-medium text-fg">{{ campo.label }}</label>
+          {{ campo }}
+          {% for errore in campo.errors %}<p class="mt-1 text-sm text-red-400">{{ errore }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+
+      <button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
+        Accedi
+      </button>
+    </form>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,7 @@
+<li id="fonte-{{ m.pk }}-{{ f.n }}" class="rounded-lg bg-page/60 p-2">
+  <p class="text-muted">
+    <span class="font-mono text-indigo-300">[{{ f.n }}]</span>
+    {% if f.visibile %}<a href="{{ f.url }}" class="text-fg hover:text-indigo-300">{{ f.title }}</a> · v{{ f.version }} · <a href="{{ f.apri }}" target="_blank" rel="noopener" class="text-indigo-300 hover:underline">Apri al passaggio</a>{% else %}<span>{{ f.title }}</span>{% endif %}
+  </p>
+  {% if f.text %}<p class="mt-1 whitespace-pre-line break-words text-muted">{{ f.text|truncatechars:500 }}</p>{% endif %}
+</li>

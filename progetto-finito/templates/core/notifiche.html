@@ -1,0 +1,43 @@
+{% extends "app.html" %}
+
+{% block title %}Notifiche · DjangoVault{% endblock %}
+{% block header %}Notifiche{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold tracking-tight">Notifiche</h1>
+  {% if notifiche_non_lette %}
+  <form method="post" action="{% url 'core:notifiche_segna_lette' %}">
+    {% csrf_token %}
+    <button type="submit" class="rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm text-fg hover:bg-line">Segna tutte come lette</button>
+  </form>
+  {% endif %}
+</div>
+
+<ul class="mt-6 max-w-3xl divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+  {% for n in pagina %}
+  <li>
+    <form method="post" action="{% url 'core:notifica_apri' n.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="flex w-full items-start gap-3 px-5 py-4 text-left hover:bg-surface-2">
+        <span class="mt-1.5 size-2 shrink-0 rounded-full {% if n.read_at %}bg-line{% else %}bg-indigo-500{% endif %}" aria-hidden="true"></span>
+        <span class="min-w-0">
+          <span class="block text-sm {% if n.read_at %}text-muted{% else %}text-fg{% endif %}">{{ n.message }}</span>
+          <span class="block text-xs text-muted">{{ n.created_at|date:"d/m/Y H:i" }}{% if not n.read_at %} · non letta{% endif %}</span>
+        </span>
+      </button>
+    </form>
+  </li>
+  {% empty %}
+  <li class="px-5 py-10 text-center text-sm text-muted">Nessuna notifica.</li>
+  {% endfor %}
+</ul>
+
+{% if pagina.paginator.num_pages > 1 %}
+<nav class="mt-4 flex items-center gap-3 text-sm text-muted" aria-label="Paginazione">
+  {% if pagina.has_previous %}<a href="?page={{ pagina.previous_page_number }}" class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface-2">Precedente</a>{% endif %}
+  <span>Pagina {{ pagina.number }} di {{ pagina.paginator.num_pages }}</span>
+  {% if pagina.has_next %}<a href="?page={{ pagina.next_page_number }}" class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface-2">Successiva</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

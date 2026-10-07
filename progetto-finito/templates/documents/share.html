@@ -1,0 +1,51 @@
+{% extends "app.html" %}
+
+{% block title %}Condivisione · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'documents:list' %}" class="hover:text-fg">Documenti</a> / <a href="{{ documento.get_absolute_url }}" class="hover:text-fg">{{ documento.title|truncatechars:30 }}</a> / Condivisione{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold tracking-tight">Condivisione di «{{ documento.title }}»</h1>
+<p class="mt-1 text-sm text-muted">Il proprietario ({{ documento.owner.get_full_name|default:documento.owner.username }}) ha sempre accesso completo.</p>
+
+<div class="mt-6 max-w-2xl">
+{% partialdef pannello inline %}
+  <div id="pannello" class="space-y-6">
+    <form method="post" action="{% url 'documents:share' documento.pk %}"
+          class="space-y-4 rounded-2xl border border-line bg-surface p-5"
+          hx-post="{% url 'documents:share' documento.pk %}" hx-target="#pannello" hx-swap="outerHTML">
+      {% csrf_token %}
+      <div class="grid gap-4 sm:grid-cols-2">
+        {% include "components/field.html" with campo=form.destinatario %}
+        {% include "components/field.html" with campo=form.livello %}
+      </div>
+      <p class="text-xs text-muted">Se l'utente o il gruppo ha già accesso, il livello viene aggiornato.</p>
+      <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">Condividi</button>
+    </form>
+
+    <div class="overflow-hidden rounded-2xl border border-line bg-surface">
+      <div class="border-b border-line px-5 py-4"><h2 class="text-base font-semibold">Chi ha accesso</h2></div>
+      <ul class="divide-y divide-line">
+        {% for c in condivisioni %}
+        <li class="flex items-center justify-between gap-4 px-5 py-3">
+          <div class="min-w-0">
+            <p class="truncate text-sm font-medium">
+              {% if c.group %}Gruppo · {{ c.group.name }}{% else %}{{ c.user.get_full_name|default:c.user.username }}{% endif %}
+            </p>
+            <p class="text-xs text-muted">{{ c.get_level_display }} · da {{ c.granted_by.username|default:"—" }}, {{ c.created_at|date:"d/m/Y" }}</p>
+          </div>
+          <form method="post" action="{% url 'documents:share_revoke' documento.pk c.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="text-sm text-red-400 hover:text-red-300"
+                    hx-post="{% url 'documents:share_revoke' documento.pk c.pk %}" hx-target="closest li" hx-swap="outerHTML"
+                    hx-confirm="Revocare l'accesso?">Revoca</button>
+          </form>
+        </li>
+        {% empty %}
+        <li class="px-5 py-6 text-center text-sm text-muted">Il documento non è condiviso con nessuno.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endpartialdef %}
+</div>
+{% endblock %}

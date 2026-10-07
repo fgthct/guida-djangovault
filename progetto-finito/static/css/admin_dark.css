@@ -1,0 +1,56 @@
+/* Tema scuro dell'admin di Django, coerente con l'app (vedi frontend/css/app.css).
+   Ridefinisce le variabili CSS dell'admin per QUALUNQUE modalità del suo selettore
+   di tema (chiaro, scuro, automatico): niente sfondi bianchi in nessun caso. */
+html:root,
+html[data-theme] {
+    color-scheme: dark;
+
+    --primary: #262a4f;
+    --primary-fg: #d7dae3;
+    --secondary: #3730a3;
+    --accent: #a5b4fc;
+
+    --body-fg: #d7dae3;
+    --body-bg: #111318;
+    --body-quiet-color: #98a0b3;
+    --body-medium-color: #c3c8d6;
+    --body-loud-color: #e6e8ef;
+
+    --header-color: #c7d2fe;
+    --header-branding-color: var(--accent);
+    --header-bg: #1a1d3a;
+    --header-link-color: #d7dae3;
+
+    --breadcrumbs-fg: #98a0b3;
+    --breadcrumbs-link-fg: #c7d2fe;
+    --breadcrumbs-bg: #1a1d26;
+
+    --link-fg: #a5b4fc;
+    --link-hover-color: #c7d2fe;
+    --link-selected-fg: #c7d2fe;
+
+    --hairline-color: #262a37;
+    --border-color: #343a4b;
+
+    --error-fg: #f87171;
+
+    --message-debug-bg: #262a37;
+    --message-info-bg: #1e3a5f;
+    --message-success-bg: #14532d;
+    --message-warning-bg: #5b3a0a;
+    --message-error-bg: #5b1a1a;
+
+    --darkened-bg: #171a22;
+    --selected-bg: #232733;
+    --selected-row: #26305a;
+
+    --button-fg: #e6e8ef;
+    --button-bg: #4338ca;
+    --button-hover-bg: #3730a3;
+    --default-button-bg: #4f46e5;
+    --default-button-hover-bg: #4338ca;
+    --close-button-bg: #343a4b;
+    --close-button-hover-bg: #4a5163;
+    --delete-button-bg: #b91c1c;
+    --delete-button-hover-bg: #991b1b;
+}

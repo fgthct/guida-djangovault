@@ -1,0 +1,7 @@
+{# Uso: {% include "components/field.html" with campo=form.title %} #}
+<div>
+  <label for="{{ campo.id_for_label }}" class="mb-1 block text-sm font-medium text-fg">{{ campo.label }}</label>
+  {{ campo }}
+  {% if campo.help_text %}<p class="mt-1 text-xs text-muted">{{ campo.help_text }}</p>{% endif %}
+  {% for errore in campo.errors %}<p class="mt-1 text-sm text-red-400">{{ errore }}</p>{% endfor %}
+</div>

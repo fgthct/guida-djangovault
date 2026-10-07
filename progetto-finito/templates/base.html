@@ -1,0 +1,29 @@
+{% load static assets %}<!doctype html>
+<html lang="it" class="h-full bg-page">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111318">
+  <meta name="color-scheme" content="dark">
+  {# htmx senza eval, senza <style> inline (CSP) e solo verso lo stesso host #}
+  <meta name="htmx-config" content='{"allowEval": false, "includeIndicatorStyles": false, "selfRequestsOnly": true}'>
+  <title>{% block title %}DjangoVault{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/icon.svg' %}">
+  {# App installabile (PWA): manifest, icona per iPhone/iPad e registrazione del service worker #}
+  <link rel="manifest" href="{% url 'core:manifest' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="DV">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="stylesheet" href="{% asset 'css/app.css' %}">
+  {# app.js deve stare prima di Alpine: registra i componenti su alpine:init #}
+  <script src="{% asset 'js/app.js' %}" defer></script>
+  <script src="{% static 'vendor/alpine-csp.min.js' %}" defer></script>
+  <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+  <script src="{% asset 'js/pwa.js' %}" defer></script>
+</head>
+<body class="h-full bg-page text-fg antialiased" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  {% block body %}{% endblock %}
+</body>
+</html>

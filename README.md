@@ -6,6 +6,8 @@ Ogni cartella contiene i file del progetto DjangoVault di cui parla quel capitol
 del progetto, nella loro versione finale (non uno scatto di come erano a metà libro). Servono a confrontare
 il tuo lavoro con quello del libro, non a sostituirlo: scrivere a mano il codice è il modo migliore per impararlo.
 
+Il progetto intero, pronto da scaricare e avviare, è nella cartella [progetto-finito](progetto-finito): ha il suo README con i passi per metterlo in funzione.
+
 Un file che serve a più capitoli compare in ciascuno di essi. La corrispondenza fra capitoli e fasi del
 progetto è nell'Appendice D del libro.
 
@@ -29,4 +31,4 @@ progetto è nell'Appendice D del libro.
 | 16 | [Backup, ripristino e manutenzione](cap16) | 5 |
 | 17 | [Errori e lezioni](cap17) | 0 |
 
-I test (cartelle `tests/`) sono inclusi solo dove il capitolo li commenta. Il progetto intero, con tutti i test, è DjangoVault.
+I test (cartelle `tests/`) sono inclusi solo dove il capitolo li commenta. Il progetto intero, con tutti i test, è in `progetto-finito`.

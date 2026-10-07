@@ -1,0 +1,24 @@
+{% load static assets %}<!doctype html>
+{# Base delle pagine di errore (400, 403, 404, 500): autonoma, non dipende da sessione o contesto. #}
+<html lang="it" class="h-full bg-page">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{% block titolo %}Errore{% endblock %} · DjangoVault</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/icon.svg' %}">
+  <link rel="stylesheet" href="{% asset 'css/app.css' %}">
+</head>
+<body class="h-full bg-page text-fg antialiased">
+  <main class="flex min-h-full items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md text-center">
+      <p class="text-6xl font-semibold tracking-tight text-indigo-400">{% block codice %}{% endblock %}</p>
+      <h1 class="mt-4 text-2xl font-semibold tracking-tight">{% block titolo_pagina %}{% endblock %}</h1>
+      <p class="mt-2 text-muted">{% block messaggio %}{% endblock %}</p>
+      <a href="/" class="mt-8 inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 shadow-sm hover:bg-indigo-500">
+        Torna alla home
+      </a>
+    </div>
+  </main>
+</body>
+</html>

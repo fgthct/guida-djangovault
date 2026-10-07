@@ -1,0 +1,43 @@
+{% extends "app.html" %}
+{% block title %}Chiedi · DjangoVault{% endblock %}
+{% block header %}Chiedi{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold tracking-tight">Chiedi ai tuoi documenti</h1>
+</div>
+{% if not configurato %}
+<div class="mt-4 max-w-2xl">{% include "components/alert.html" with tag="warning" testo="L'assistente non è configurato: manca ANTHROPIC_API_KEY nel file .env." %}</div>
+{% endif %}
+
+<div class="mt-6 max-w-3xl">
+  {% url 'assistant:new' as azione %}
+  {% include "assistant/_form.html" with azione=azione limite=1000 %}
+  <p class="mt-4 text-xs text-muted">
+    {% if n_documenti %}L'assistente può leggere <strong class="text-fg">{{ n_documenti }}</strong> document{{ n_documenti|pluralize:"o,i" }} fra quelli che vedi.{% else %}Nessun documento è ancora consultabile dall'assistente: il consenso si dà dalla pagina di ogni documento.{% endif %}
+    I passaggi pertinenti alla domanda vengono inviati ad Anthropic per formulare la risposta.
+  </p>
+</div>
+
+<section class="mt-10" aria-labelledby="conv-titolo">
+  <h2 id="conv-titolo" class="text-base font-semibold">Conversazioni recenti</h2>
+  {% if conversazioni %}
+  <ul class="mt-3 max-w-3xl divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+    {% for c in conversazioni %}
+    <li class="flex items-center justify-between gap-3 px-4 py-3">
+      <a href="{{ c.get_absolute_url }}" class="min-w-0 flex-1">
+        <span class="block truncate text-sm font-medium text-fg hover:text-indigo-300">{{ c.title }}</span>
+        <span class="text-xs text-muted">{{ c.updated_at|date:"d/m/Y H:i" }}{% if c.document %} · su «{{ c.document.title|truncatechars:40 }}»{% elif c.category %} · {{ c.category.name }}{% endif %}</span>
+      </a>
+      <form method="post" action="{% url 'assistant:delete' c.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="text-xs text-red-400 hover:text-red-300" aria-label="Elimina la conversazione «{{ c.title }}»">Elimina</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="mt-3 text-sm text-muted">Nessuna conversazione ancora.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% load assets %}{% comment %} Casella della domanda. Contesto: azione (URL), documento (facoltativo), domanda, limite. {% endcomment %}
+<form method="post" action="{{ azione }}" {% if htmx %}hx-post="{{ azione }}" hx-target="#messaggi" hx-swap="beforeend" id="form-domanda"{% endif %}
+      class="flex items-end gap-3">
+  {% csrf_token %}
+  {% if documento %}<input type="hidden" name="documento" value="{{ documento.pk }}">{% endif %}
+  {% if categorie and not documento %}
+  <div class="w-44 shrink-0">
+    <label for="categoria" class="sr-only">Categoria</label>
+    <select id="categoria" name="categoria" class="w-full rounded-xl border border-line bg-rail px-2 py-2.5 text-sm text-fg focus:border-indigo-400 focus:outline-none">
+      <option value="">Tutte le categorie</option>
+      {% for c in categorie %}<option value="{{ c.pk }}"{% if categoria_scelta and categoria_scelta.pk == c.pk %} selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <textarea name="domanda" rows="2" maxlength="{{ limite }}" required autofocus
+            placeholder="{% if documento %}Chiedi qualcosa su «{{ documento.title|truncatechars:40 }}»…{% else %}Fai una domanda sui tuoi documenti…{% endif %}"
+            aria-label="La tua domanda" data-invio
+            class="min-h-12 min-w-0 flex-1 resize-y rounded-xl border border-line bg-rail px-3 py-2 text-fg placeholder:text-muted/60 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30">{{ domanda }}</textarea>
+  <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">Chiedi</button>
+</form>
+<div id="errore-domanda" class="mt-2" aria-live="polite">{% if errore %}<p class="text-sm text-red-400" role="alert">{{ errore }}</p>{% endif %}</div>
+<script src="{% asset 'js/chat.js' %}" defer></script>

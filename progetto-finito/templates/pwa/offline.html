@@ -1,0 +1,24 @@
+{% load assets %}<!doctype html>
+<html lang="it" class="h-full bg-page">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111318">
+  <meta name="color-scheme" content="dark">
+  <title>Non raggiungibile · DjangoVault</title>
+  <link rel="stylesheet" href="{% asset 'css/app.css' %}">
+</head>
+<body class="h-full bg-page text-fg antialiased">
+  <main class="mx-auto flex min-h-full max-w-md flex-col justify-center px-6 py-12 text-center">
+    <h1 class="text-2xl font-semibold tracking-tight">DjangoVault non è raggiungibile</h1>
+    <p class="mt-3 text-muted">Il telefono è senza rete oppure non è collegato al server.</p>
+    <ul class="mt-6 space-y-2 text-left text-sm text-muted">
+      <li>• A casa: controlla di essere sul Wi-Fi di casa.</li>
+      <li>• Fuori casa: accendi <span class="text-fg">WireGuard</span> e riprova.</li>
+      <li>• Se è tutto a posto, il server potrebbe essere spento.</li>
+    </ul>
+    <p class="mt-8"><a href="/" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">Riprova</a></p>
+    <p class="mt-6 text-xs text-muted">I documenti non sono salvati sul telefono: per leggerli serve il collegamento al server.</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{% extends "app.html" %}
+
+{% block title %}{% if approva %}Approva{% else %}Rimanda{% endif %} · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'documents:list' %}" class="hover:text-fg">Documenti</a> / <a href="{{ documento.get_absolute_url }}" class="hover:text-fg">{{ documento.title|truncatechars:30 }}</a> / Revisione{% endblock %}
+
+{% block content %}
+<div class="max-w-lg rounded-2xl border border-line bg-surface p-6 shadow-lg shadow-black/20">
+  <h1 class="text-xl font-semibold">{% if approva %}Approva{% else %}Rimanda al proprietario{% endif %}</h1>
+  <p class="mt-2 text-sm text-muted">
+    {% if approva %}Confermi la tua approvazione di «{{ documento.title }}».{% else %}«{{ documento.title }}» torna in Bozza al proprietario e le approvazioni già date decadono. Spiega cosa va cambiato.{% endif %}
+  </p>
+  {% if giro.message %}<div class="mt-4 rounded-lg border border-line bg-surface-2 p-3 text-sm"><p class="text-xs text-muted">Messaggio del proprietario</p><p class="mt-1 whitespace-pre-line text-fg">{{ giro.message }}</p></div>{% endif %}
+  <form method="post" class="mt-6 space-y-5">
+    {% csrf_token %}
+    {% for campo in form %}{% include "components/field.html" with campo=campo %}{% endfor %}
+    <div class="flex gap-3">
+      <button type="submit" class="rounded-lg px-4 py-2 text-sm font-semibold {% if approva %}bg-emerald-600 text-emerald-50 hover:bg-emerald-500{% else %}bg-red-600 text-red-50 hover:bg-red-500{% endif %}">{% if approva %}Approva{% else %}Rimanda{% endif %}</button>
+      <a href="{{ documento.get_absolute_url }}" class="rounded-lg border border-line px-4 py-2 text-sm text-muted hover:bg-surface-2">Annulla</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

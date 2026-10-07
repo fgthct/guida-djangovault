@@ -1,0 +1,34 @@
+[project]
+name = "djangovault"
+version = "0.1.0"
+description = "DjangoVault: DMS server-rendered con Django, HTMX e ricerca semantica (pgvector)"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "anthropic>=1.11.0",
+    "celery[redis]>=5.5",
+    "channels>=4.3",
+    "channels-redis>=4.3",
+    "daphne>=4.2",
+    "defusedxml>=0.7",
+    "django>=6.1,<6.2",
+    "pgvector>=0.4",
+    "pillow>=11",
+    "psycopg[binary]>=3.2",
+    "redis>=5.0",
+    "sentence-transformers>=5",
+    "torch>=2.9",
+]
+
+[tool.uv]
+package = false
+
+# PyTorch solo-CPU (~200 MB invece di ~5 GB con CUDA): il server non ha GPU. Perché valga, torch deve
+# essere una dipendenza DIRETTA del progetto (le "sources" di uv non si applicano alle dipendenze indirette).
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

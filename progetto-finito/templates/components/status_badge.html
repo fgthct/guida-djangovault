@@ -1,0 +1,5 @@
+{# Uso: {% include "components/status_badge.html" with documento=documento %} #}
+{% if documento.status == 'approved' %}{% include "components/badge.html" with tone="ok" testo=documento.get_status_display %}
+{% elif documento.status == 'in_review' %}{% include "components/badge.html" with tone="warning" testo=documento.get_status_display %}
+{% elif documento.status == 'archived' %}{% include "components/badge.html" with tone="neutral" testo=documento.get_status_display %}
+{% else %}{% include "components/badge.html" with tone="info" testo=documento.get_status_display %}{% endif %}

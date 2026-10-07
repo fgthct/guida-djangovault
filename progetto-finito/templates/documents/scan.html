@@ -1,0 +1,72 @@
+{% extends "app.html" %}
+{% load assets %}
+
+{% block title %}Scansiona · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'documents:list' %}" class="hover:text-fg">Documenti</a> / Scansiona{% endblock %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold tracking-tight">Scansiona con la fotocamera</h1>
+  <a href="{% url 'documents:upload' %}" class="text-sm text-muted hover:text-fg">Carica file →</a>
+</div>
+
+<div id="scansiona" class="mt-6 max-w-3xl space-y-5" data-url="{% url 'documents:upload_file' %}" data-max-mb="{{ massimo_mb }}">
+  {% csrf_token %}
+
+  <div class="rounded-2xl border border-line bg-surface p-5">
+    <p class="text-sm text-muted">Fotografa una pagina alla volta, su un piano chiaro e con buona luce. Quando hai finito, le pagine diventano <span class="text-fg">un solo PDF</span> e il sistema ne legge il testo (OCR) per cercarlo e classificarlo.</p>
+    <div class="mt-4 flex flex-wrap gap-3">
+      <button type="button" id="foto" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">Fotografa una pagina</button>
+      <button type="button" id="galleria" class="rounded-lg border border-line px-4 py-2 text-sm hover:bg-surface-2">Scegli dalla galleria</button>
+    </div>
+    <input type="file" id="input-foto" accept="image/*" capture="environment" class="hidden" aria-hidden="true" tabindex="-1">
+    <input type="file" id="input-galleria" accept="image/*" multiple class="hidden" aria-hidden="true" tabindex="-1">
+  </div>
+
+  <div id="pagine-pannello" class="hidden space-y-4">
+    <p id="pagine-conteggio" class="text-sm text-muted" aria-live="polite"></p>
+    <ul id="pagine" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"></ul>
+
+    <div class="grid gap-4 rounded-2xl border border-line bg-surface p-5 sm:grid-cols-2">
+      <div class="sm:col-span-2">
+        <label for="titolo" class="mb-1 block text-sm font-medium">Titolo</label>
+        <input id="titolo" type="text" maxlength="120" autocomplete="off"
+               class="w-full rounded-lg border border-line bg-rail px-3 py-2 text-fg focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30">
+      </div>
+      <div>
+        <label for="filtro" class="mb-1 block text-sm font-medium">Aspetto delle pagine</label>
+        <select id="filtro" class="w-full rounded-lg border border-line bg-rail px-3 py-2 text-fg focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30">
+          <option value="documento" selected>Documento (sfondo bianco, testo nitido)</option>
+          <option value="grigi">Scala di grigi</option>
+          <option value="colori">Colori originali</option>
+        </select>
+      </div>
+      <div>
+        <label for="categoria" class="mb-1 block text-sm font-medium">Categoria</label>
+        <select id="categoria" class="w-full rounded-lg border border-line bg-rail px-3 py-2 text-fg focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30">
+          <option value="automatica" selected>Automatica (la propone il sistema)</option>
+          <option value="nessuna">Nessuna (la scelgo dopo)</option>
+          {% for c in categorie %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="flex items-start gap-2 text-sm">
+          <input type="checkbox" id="ai" class="mt-1">
+          <span>Consenti all'assistente IA di leggere questo documento
+            <span class="block text-xs text-muted">Le scansioni sono spesso documenti personali: di norma resta spento. Il documento si cerca e si legge comunque.</span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="button" id="crea" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 hover:bg-indigo-500 disabled:opacity-50">Crea il PDF e carica</button>
+      <button type="button" id="azzera" class="rounded-lg border border-line px-4 py-2 text-sm text-muted hover:bg-surface-2">Ricomincia</button>
+    </div>
+  </div>
+
+  <p id="esito" class="text-sm" role="status" aria-live="polite"></p>
+</div>
+
+<script src="{% asset 'js/pdf_immagini.js' %}" defer></script>
+<script src="{% asset 'js/scansiona.js' %}" defer></script>
+{% endblock %}

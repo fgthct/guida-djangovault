@@ -1,0 +1,157 @@
+{% extends "app.html" %}
+{% load assets %}
+
+{% block title %}Documenti · DjangoVault{% endblock %}
+{% block header %}Documenti{% endblock %}
+
+{% block content %}
+<script src="{% asset 'js/selezione.js' %}" defer></script>
+<script src="{% asset 'js/ricerche_salvate.js' %}" defer></script>
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-semibold tracking-tight">Documenti</h1>
+  <div class="flex flex-wrap gap-2">
+    {% if da_smistare %}<a href="{% url 'documents:smistamento' %}" class="rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-200 hover:bg-amber-500/20">Da smistare <span class="ml-1 text-xs opacity-80">{{ da_smistare }}</span></a>{% endif %}
+    <a href="{% url 'documents:create' %}" class="rounded-lg border border-line px-4 py-2 text-sm text-muted hover:bg-surface-2 hover:text-fg">Carica un documento</a>
+    <a href="{% url 'documents:upload' %}" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 shadow-sm hover:bg-indigo-500">Carica più file</a>
+    <a href="{% url 'documents:scan' %}" class="rounded-lg border border-line px-4 py-2 text-sm hover:bg-surface-2">Scansiona</a>
+  </div>
+</div>
+
+{# Ricerca dal vivo: HTMX chiede a Django solo il frammento "risultati" e aggiorna l'URL (back/forward funzionano). #}
+<nav class="mt-5 flex flex-wrap gap-2" aria-label="Categorie">
+  {% for c in schede %}<a href="{{ c.link }}" {% if c.attiva %}aria-current="true"{% endif %}
+     class="rounded-full border px-3 py-1 text-sm {% if c.attiva %}border-indigo-400 bg-indigo-500/20 text-indigo-100{% else %}border-line text-muted hover:bg-surface-2 hover:text-fg{% endif %}">{{ c.nome }} <span class="text-xs opacity-70">{{ c.n }}</span></a>{% endfor %}
+</nav>
+<p class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">Tipo:
+  {% for t in tipi %}<a href="{{ t.link }}" class="rounded-md px-2 py-0.5 {% if t.attivo %}bg-surface-2 text-fg{% else %}hover:text-fg{% endif %}">{{ t.nome }}</a>{% endfor %}
+</p>
+
+<div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted" data-ricerche-salvate>
+  <span>Ricerche salvate:</span>
+  {% for r in ricerche_salvate %}
+  <span class="inline-flex items-center rounded-full border border-line">
+    <a href="{{ r.link }}" class="rounded-l-full px-3 py-1 text-fg hover:bg-surface-2">{{ r.name }}</a>
+    <form method="post" action="{% url 'documents:ricerca_elimina' r.pk %}" class="contents">{% csrf_token %}<button type="submit" class="rounded-r-full px-2 py-1 hover:bg-surface-2 hover:text-red-300" aria-label="Elimina la ricerca «{{ r.name }}»" title="Elimina">×</button></form>
+  </span>
+  {% empty %}<span>nessuna</span>{% endfor %}
+  <form id="salva-ricerca" method="post" action="{% url 'documents:ricerca_salva' %}" class="flex items-center gap-2">{% csrf_token %}
+    <input type="hidden" name="filtri" value="">
+    <input type="text" name="nome" maxlength="60" placeholder="Salva questa ricerca come…" aria-label="Nome della ricerca da salvare" required
+           class="w-52 rounded-lg border border-line bg-rail px-2 py-1 text-fg placeholder:text-muted/60 focus:border-indigo-400 focus:outline-none">
+    <button type="submit" class="rounded-lg border border-line bg-surface-2 px-3 py-1 text-fg hover:bg-line">Salva</button>
+  </form>
+</div>
+
+<form method="get" action="{% url 'documents:list' %}" role="search"
+      class="mt-4 flex flex-wrap gap-3"
+      hx-get="{% url 'documents:list' %}"
+      hx-trigger="input changed delay:300ms from:#q, change from:#modo, change from:#scope, change from:#stato, submit"
+      hx-target="#risultati" hx-push-url="true" hx-indicator="#cerca-indicatore">
+  <input type="search" id="q" name="q" value="{{ q }}" placeholder="Cerca nei titoli e nel contenuto dei documenti…" aria-describedby="aiuto-ricerca" autocomplete="off"
+         class="min-w-[14rem] flex-1 rounded-lg border border-line bg-rail px-3 py-2 text-fg placeholder:text-muted/60 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30">
+  <select id="modo" name="modo" aria-label="Tipo di ricerca"
+          class="rounded-lg border border-line bg-rail px-3 py-2 text-fg focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30">
+    {% for valore, nome in modi.items %}<option value="{{ valore }}" {% if modo == valore %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+  </select>
+  <input type="hidden" name="categoria" value="{{ categoria }}">
+  <input type="hidden" name="tipo" value="{{ tipo }}">
+  <select id="stato" name="stato"
+          class="rounded-lg border border-line bg-rail px-3 py-2 text-fg focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30">
+    <option value="">Ogni stato</option>
+    {% for valore, nome in stati %}<option value="{{ valore }}" {% if stato == valore %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+  </select>
+  <select id="scope" name="scope"
+          class="rounded-lg border border-line bg-rail px-3 py-2 text-fg focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30">
+    <option value="">Tutti</option>
+    <option value="miei" {% if scope == "miei" %}selected{% endif %}>Miei</option>
+    <option value="condivisi" {% if scope == "condivisi" %}selected{% endif %}>Condivisi con me</option>
+  </select>
+  <input type="hidden" name="per" value="{{ per }}">
+  <button type="submit" class="rounded-lg border border-line bg-surface-2 px-4 py-2 text-sm text-fg hover:bg-line">Cerca</button>
+  <span id="cerca-indicatore" class="htmx-indicator self-center text-xs text-muted">ricerca…</span>
+</form>
+<p id="aiuto-ricerca" class="mt-2 text-xs text-muted">Cerca anche dentro i file (PDF, scansioni, Word…) e per significato: «contratto di locazione» trova anche «affitto». «Frase esatta» tra virgolette, <span class="font-mono">-parola</span> per escludere, <span class="font-mono">a OR b</span> per alternative.</p>
+
+<section id="risultati" class="mt-6" aria-live="polite">
+{% partialdef risultati inline %}
+  {% if avviso %}<p class="mb-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm text-amber-200" role="status">{{ avviso }}</p>{% endif %}
+  {% if pagina.object_list %}
+  <form id="selezione" method="post" action="{% url 'documents:azione_multipla' %}">{% csrf_token %}
+  <input type="hidden" name="ritorno" value="{{ request.get_full_path }}">
+  <div data-barra-selezione hidden class="sticky top-16 z-20 mb-3 flex flex-wrap items-center gap-3 rounded-2xl border border-indigo-400/40 bg-surface px-4 py-3 text-sm shadow-lg shadow-black/30">
+    <span><strong data-conteggio>0</strong> selezionati</span>
+    <select name="categoria" aria-label="Categoria di destinazione" class="rounded-lg border border-line bg-rail px-3 py-1.5 text-fg">
+      <option value="">Sposta in…</option>
+      <option value="nessuna">Senza categoria</option>
+      {% for c in categorie %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}
+    </select>
+    <button type="submit" name="azione" value="categoria" class="rounded-lg bg-indigo-600 px-3 py-1.5 font-semibold text-indigo-50 hover:bg-indigo-500">Sposta</button>
+    <button type="submit" name="azione" value="zip" class="rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-fg hover:bg-line">Scarica ZIP</button>
+    <button type="button" data-deseleziona class="ml-auto text-muted hover:text-fg">Annulla selezione</button>
+  </div>
+  <div class="overflow-hidden rounded-2xl border border-line bg-surface shadow-lg shadow-black/20">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-line text-xs uppercase tracking-wide text-muted">
+        <tr>
+          <th scope="col" class="w-10 py-3 pl-4"><input type="checkbox" data-seleziona-tutti aria-label="Seleziona tutti i documenti della pagina" class="size-4 accent-indigo-500"></th>
+          <th scope="col" class="px-4 py-3 font-medium">Titolo</th>
+          <th scope="col" class="hidden px-4 py-3 font-medium md:table-cell">Categoria</th>
+          <th scope="col" class="hidden px-4 py-3 font-medium sm:table-cell">Stato</th>
+          <th scope="col" class="hidden px-4 py-3 font-medium lg:table-cell">Aggiornato</th>
+          <th scope="col" class="px-4 py-3 text-right font-medium"><span class="sr-only">Azioni</span></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-line">
+        {% for d in pagina %}
+        <tr>
+          <td class="w-10 py-3 pl-4 align-top"><input type="checkbox" name="scelti" value="{{ d.pk }}" aria-label="Seleziona «{{ d.title }}»" class="mt-1 size-4 accent-indigo-500"></td>
+          <td class="px-4 py-3">
+            <a href="{{ d.get_absolute_url }}" class="font-medium text-fg hover:text-indigo-300">{{ d.title }}</a>
+            {# Sul telefono la colonna «Categoria» è nascosta: la categoria si legge qui sotto #}
+            <p class="mt-0.5 text-xs md:hidden {% if d.category %}text-indigo-300{% else %}text-muted{% endif %}" data-categoria-mobile>{{ d.category|default:"Senza categoria" }}</p>
+            {% if d.estratto %}<p class="mt-1 max-w-2xl text-xs leading-relaxed text-muted">{{ d.estratto }}</p>{% endif %}
+            {% if d.current_version %}<p class="text-xs text-muted">v{{ d.current_version.version_number }} · {{ d.current_version.original_name }} · {{ d.current_version.size|filesizeformat }}{% if d.owner_id != request.user.id %} · di {{ d.owner.get_full_name|default:d.owner.username }}{% endif %}</p>{% endif %}
+          </td>
+          <td class="hidden px-4 py-3 text-muted md:table-cell">{{ d.category|default:"—" }}</td>
+          <td class="hidden px-4 py-3 sm:table-cell">{% if d.status != "draft" %}{% include "components/status_badge.html" with documento=d %}{% endif %}</td>
+          <td class="hidden px-4 py-3 text-muted lg:table-cell">{{ d.updated_at|date:"d/m/Y H:i" }}</td>
+          <td class="whitespace-nowrap px-4 py-3 text-right">
+            <a href="{% url 'documents:download' d.pk %}" class="text-muted hover:text-fg">Scarica</a>
+            {% if d.puo_eliminare %}<button type="button" class="ml-3 text-red-400 hover:text-red-300"
+                    hx-delete="{% url 'documents:delete' d.pk %}"
+                    hx-confirm="Eliminare «{{ d.title }}»? L'operazione non si può annullare."
+                    hx-target="closest tr" hx-swap="outerHTML">Elimina</button>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  </form>
+
+  <div class="mt-4 flex items-center justify-between text-sm text-muted">
+    <p>{{ pagina.paginator.count }} document{{ pagina.paginator.count|pluralize:"o,i" }}{% if non_indicizzati %} · {{ non_indicizzati }} non ancora ricercabil{{ non_indicizzati|pluralize:"e,i" }} per significato{% endif %}{% if in_elaborazione %} · <span class="text-amber-300">{{ in_elaborazione }} in elaborazione</span>{% endif %}
+      · <span class="whitespace-nowrap">per pagina:
+        {% for n in per_scelte %}{% if n == per %}<strong class="text-fg">{{ n }}</strong>{% else %}<a class="hover:text-fg" href="?{% if filtri_senza_per %}{{ filtri_senza_per }}&amp;{% endif %}per={{ n }}">{{ n }}</a>{% endif %}{% if not forloop.last %} / {% endif %}{% endfor %}</span></p>
+    {% if pagina.paginator.num_pages > 1 %}
+    <nav class="flex items-center gap-3" aria-label="Paginazione">
+      {% if pagina.has_previous %}<a href="?{% if filtri %}{{ filtri }}&amp;{% endif %}page={{ pagina.previous_page_number }}" class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface-2">Precedente</a>{% endif %}
+      <span>Pagina {{ pagina.number }} di {{ pagina.paginator.num_pages }}</span>
+      {% if pagina.has_next %}<a href="?{% if filtri %}{{ filtri }}&amp;{% endif %}page={{ pagina.next_page_number }}" class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface-2">Successiva</a>{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="rounded-2xl border border-dashed border-line bg-surface px-6 py-12 text-center">
+    {% if q or categoria or scope or stato or tipo %}
+      <p class="text-fg">Nessun documento corrisponde alla ricerca.</p>
+      <p class="mt-1 text-sm text-muted">Prova con altre parole o togli il filtro sulla categoria.</p>
+    {% else %}
+      <p class="text-fg">Non ci sono ancora documenti.</p>
+      <p class="mt-1 text-sm text-muted">Carica il primo per iniziare.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+{% endpartialdef %}
+</section>
+{% endblock %}

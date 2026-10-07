@@ -1,0 +1,7 @@
+{% if messages %}
+<div class="mb-4 space-y-2">
+  {% for message in messages %}
+    {% include "components/alert.html" with tag=message.tags testo=message %}
+  {% endfor %}
+</div>
+{% endif %}

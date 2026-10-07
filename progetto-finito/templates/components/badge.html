@@ -1,0 +1,7 @@
+{# Uso: {% include "components/badge.html" with tone="ok|error|warning|info|neutral" testo="..." %} #}
+<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+  {% if tone == 'ok' %}bg-emerald-500/15 text-emerald-300
+  {% elif tone == 'error' %}bg-red-500/15 text-red-300
+  {% elif tone == 'warning' %}bg-amber-500/15 text-amber-300
+  {% elif tone == 'info' %}bg-sky-500/15 text-sky-300
+  {% else %}bg-surface-2 text-muted{% endif %}">{{ testo }}</span>

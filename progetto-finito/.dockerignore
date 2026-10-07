@@ -1,0 +1,15 @@
+.git
+.venv
+bin
+media
+staticfiles
+.env
+__pycache__
+*.pyc
+celerybeat-schedule*
+backups
+.env.prod
+deploy/certs
+inbox/*
+deploy/acme
+.env.prod.http

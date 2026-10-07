@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load assets %}
+
+{% block body %}
+<script src="{% asset 'js/realtime.js' %}" defer></script>
+<script src="{% asset 'js/ricerca_rapida.js' %}" defer></script>
+<dialog id="ricerca-rapida" data-indirizzo="{% url 'documents:rapida' %}" data-elenco="{% url 'documents:list' %}"
+        class="m-auto mt-[12vh] w-[min(36rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-0 text-fg shadow-2xl shadow-black/50 backdrop:bg-black/60" aria-label="Ricerca rapida">
+  <div class="border-b border-line p-3">
+    <input id="rr-campo" type="search" autocomplete="off" placeholder="Cerca un documento…" aria-label="Cerca un documento"
+           class="w-full rounded-lg border border-line bg-rail px-3 py-2 text-fg focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30">
+  </div>
+  <ul id="rr-risultati" role="listbox" class="max-h-[50vh] overflow-y-auto p-2"></ul>
+  <p id="rr-vuoto" hidden class="px-4 py-6 text-center text-sm text-muted">Nessun documento trovato.</p>
+  <div class="flex items-center justify-between border-t border-line px-4 py-2 text-xs text-muted">
+    <span>↑ ↓ per scegliere · Invio per aprire · Esc per chiudere</span>
+    <a id="rr-tutti" hidden href="{% url 'documents:list' %}" class="hover:text-fg">Vedi tutti i risultati</a>
+  </div>
+</dialog>
+<div x-data="menu" @keydown.escape.window="close" class="min-h-full">
+
+  {# Menu mobile #}
+  <div x-cloak x-show="open" class="fixed inset-0 z-40 md:hidden">
+    <div class="fixed inset-0 bg-black/60" @click="close"></div>
+    <aside class="relative z-50 flex h-full w-64 flex-col border-r border-line bg-rail px-4 py-5">
+      {% include "components/sidebar_nav.html" %}
+    </aside>
+  </div>
+
+  {# Barra laterale desktop #}
+  <aside class="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col border-r border-line bg-rail px-4 py-5">
+    {% include "components/sidebar_nav.html" %}
+  </aside>
+
+  <div class="md:pl-64">
+    <header class="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-page/90 px-4 backdrop-blur md:px-8">
+      <button type="button" @click="toggle" class="rounded-md p-2 text-muted hover:bg-surface-2 md:hidden" aria-label="Apri il menu">
+        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <span class="min-w-0 truncate text-sm text-muted">{% block header %}{% endblock %}</span>
+      <button type="button" data-apri-ricerca class="ml-auto flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-muted hover:bg-surface-2 hover:text-fg" aria-label="Ricerca rapida">
+        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path stroke-linecap="round" d="m20 20-4-4"/></svg>
+        <span class="hidden sm:inline">Cerca</span>
+        <kbd class="hidden rounded border border-line px-1.5 text-xs md:inline">Ctrl K</kbd>
+      </button>
+      {% include "components/notifiche_badge.html" %}
+    </header>
+
+    <main class="px-4 py-8 md:px-8">
+      <div id="avvisi" class="mb-4" aria-live="polite"></div>
+      {% include "components/messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% for m in messaggi %}
+{% if m.role == "user" %}
+<div class="flex justify-end" id="msg-{{ m.pk }}">
+  <p class="max-w-2xl whitespace-pre-line break-words rounded-2xl rounded-br-sm bg-indigo-600/90 px-4 py-2.5 text-sm text-indigo-50">{{ m.content }}</p>
+</div>
+{% else %}
+{% comment %} Risposta dell'assistente: in attesa → il JavaScript apre il flusso; in generazione altrove → polling; finita → testo e fonti. {% endcomment %}
+<div id="msg-{{ m.pk }}" class="flex justify-start"
+     {% if m.status == "attesa" %}data-stream="{% url 'assistant:stream' m.pk %}" data-finale="{% url 'assistant:message' m.pk %}"
+     {% elif m.status == "generando" %}hx-get="{% url 'assistant:message' m.pk %}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <div class="min-w-0 max-w-3xl rounded-2xl rounded-bl-sm border border-line bg-surface px-4 py-3 text-sm shadow shadow-black/20">
+    {% if m.status == "attesa" or m.status == "generando" %}
+      <p data-stato class="text-xs text-muted" aria-live="polite">{% if m.status == "attesa" %}Avvio…{% else %}Sto rispondendo…{% endif %}</p>
+      <p data-testo class="whitespace-pre-wrap break-words leading-relaxed"></p>
+    {% else %}
+      {% if m.content %}<div class="risposta break-words leading-relaxed">{{ m.html }}</div>{% endif %}
+      {% if m.status == "errore" %}<p class="{% if m.content %}mt-2 {% endif %}text-red-300" role="alert">{{ m.error|default:"Errore." }}</p>{% endif %}
+      {% for o in m.occorrenze_mostrate %}
+      <div class="mt-3 border-t border-line pt-2 text-xs text-muted">
+        «{{ o.term }}» compare in {{ o.docs|length }}{% if o.altri %}+{% endif %} document{{ o.docs|length|pluralize:"o,i" }}:
+        {% for d in o.docs %}<a href="{{ d.url }}" class="text-indigo-300 hover:underline">{{ d.title }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% if o.altri %} (e altri {{ o.altri }}){% endif %}
+      </div>
+      {% endfor %}
+      {% if m.fonti_citate %}
+      <details class="mt-3 border-t border-line pt-2 text-xs">
+        <summary class="cursor-pointer text-muted hover:text-fg">Fonti citate ({{ m.fonti_citate|length }})</summary>
+        <ol class="mt-2 space-y-2">{% for f in m.fonti_citate %}{% include "assistant/_fonte.html" %}{% endfor %}</ol>
+      </details>
+      {% endif %}
+      {% if m.fonti_altre %}
+      <details class="{% if m.fonti_citate %}mt-2{% else %}mt-3 border-t border-line pt-2{% endif %} text-xs">
+        <summary class="cursor-pointer text-muted hover:text-fg">{% if m.fonti_citate %}Altri passaggi consultati, non citati ({{ m.fonti_altre|length }}){% else %}Passaggi consultati ({{ m.fonti_altre|length }}){% endif %}</summary>
+        <ol class="mt-2 space-y-2">{% for f in m.fonti_altre %}{% include "assistant/_fonte.html" %}{% endfor %}</ol>
+      </details>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endfor %}

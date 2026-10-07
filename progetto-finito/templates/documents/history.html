@@ -1,0 +1,10 @@
+{% extends "app.html" %}
+
+{% block title %}Attività · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'documents:list' %}" class="hover:text-fg">Documenti</a> / <a href="{{ documento.get_absolute_url }}" class="hover:text-fg">{{ documento.title|truncatechars:30 }}</a> / Attività{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold tracking-tight">Attività su «{{ documento.title }}»</h1>
+<p class="mt-1 text-sm text-muted">Chi ha fatto cosa e quando: modifiche, versioni, download, condivisioni e cambi di stato.</p>
+<div class="mt-6">{% include "components/audit_table.html" with pagina=pagina mostra_oggetto=False %}</div>
+{% endblock %}

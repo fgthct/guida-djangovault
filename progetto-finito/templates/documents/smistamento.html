@@ -1,0 +1,40 @@
+{% extends "app.html" %}
+
+{% block title %}Da smistare · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'documents:list' %}" class="hover:text-fg">Documenti</a> / Da smistare{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold tracking-tight">Da smistare</h1>
+<p class="mt-1 max-w-3xl text-sm text-muted">Proposte di categoria per i documenti che non ne hanno una. Nessun documento cambia categoria finché non accetti
+  (tranne quelli con fiducia almeno del {{ soglia }}%, applicati in automatico e annullabili qui sotto).</p>
+{% if in_attesa %}<p class="mt-2 text-sm text-amber-300">{{ in_attesa }} document{{ in_attesa|pluralize:"o,i" }} in attesa di classificazione.</p>{% endif %}
+
+<section class="mt-6" aria-labelledby="titolo-proposte">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 id="titolo-proposte" class="text-base font-semibold">Da rivedere <span class="text-sm font-normal text-muted">{{ proposte|length }}</span></h2>
+    {% if proposte %}
+    <form method="post" action="{% url 'documents:proposte_accetta_tutte' %}" class="flex items-center gap-2 text-sm">
+      {% csrf_token %}
+      <label for="minimo" class="text-muted">Accetta tutte con fiducia almeno</label>
+      <select id="minimo" name="minimo" class="rounded-lg border border-line bg-rail px-2 py-1.5 text-fg">
+        <option value="0.8">80%</option><option value="0.6" selected>60%</option><option value="0.4">40%</option>
+      </select>
+      <button type="submit" class="rounded-lg border border-line px-3 py-1.5 text-muted hover:bg-surface-2 hover:text-fg">Accetta</button>
+    </form>
+    {% endif %}
+  </div>
+  <ul class="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
+    {% for p in proposte %}{% include "documents/_proposta.html" %}
+    {% empty %}<li class="px-5 py-6 text-sm text-muted">Niente da rivedere.</li>{% endfor %}
+  </ul>
+</section>
+
+{% if automatiche %}
+<section class="mt-8" aria-labelledby="titolo-auto">
+  <h2 id="titolo-auto" class="text-base font-semibold">Assegnati in automatico <span class="text-sm font-normal text-muted">ultimi {{ recenti_giorni }} giorni</span></h2>
+  <ul class="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
+    {% for p in automatiche %}{% include "documents/_proposta.html" %}{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

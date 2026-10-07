@@ -1,0 +1,46 @@
+{% comment %}
+  Stato dell'elaborazione di una versione. Contesto: v (DocumentVersion), documento, puo_rielaborare.
+  Finché è «in coda» o «in corso» il blocco si ricarica da solo (HTMX); a elaborazione finita la risposta
+  non contiene più hx-get, quindi il polling si ferma.
+{% endcomment %}
+<div id="elab-{{ v.pk }}" data-segui-documento="{{ documento.pk }}" class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs"
+     {% if v.elaborazione_in_corso %}hx-get="{% url 'documents:version_processing' documento.pk v.version_number %}" hx-trigger="every 3s, dv:versione from:body" hx-swap="outerHTML"
+     {% elif v.indicizzazione_in_corso %}hx-get="{% url 'documents:version_processing' documento.pk v.version_number %}?fase=indice" hx-trigger="every 4s, dv:versione from:body" hx-swap="outerHTML"{% endif %}>
+  {% if v.processing_status == "done" %}
+    {% include "components/badge.html" with tone="ok" testo="Testo estratto" %}
+    {% if v.ocr_used %}{% include "components/badge.html" with tone="info" testo="OCR" %}{% endif %}
+    {% if v.page_count %}<span class="text-muted">{{ v.page_count }} pagin{{ v.page_count|pluralize:"a,e" }}</span>{% endif %}
+    {% if v.text_truncated %}<span class="text-amber-300">testo troncato</span>{% endif %}
+  {% elif v.processing_status == "running" %}
+    {% include "components/badge.html" with tone="info" testo="Elaborazione in corso…" %}
+  {% elif v.processing_status == "pending" %}
+    {% include "components/badge.html" with tone="neutral" testo="In coda" %}
+  {% elif v.processing_status == "skipped" %}
+    {% include "components/badge.html" with tone="neutral" testo="Nessun testo da estrarre" %}
+  {% else %}
+    {% include "components/badge.html" with tone="error" testo="Elaborazione fallita" %}
+  {% endif %}
+  {% if v.processing_message and not v.elaborazione_in_corso %}<span class="text-muted">{{ v.processing_message }}</span>{% endif %}
+  {% if puo_rielaborare and not v.elaborazione_in_corso %}
+    <button type="button" hx-post="{% url 'documents:version_reprocess' documento.pk v.version_number %}"
+            hx-target="#elab-{{ v.pk }}" hx-swap="outerHTML"
+            class="text-indigo-300 hover:text-indigo-200">Rielabora</button>
+  {% endif %}
+  {% with indice=v.stato_indice %}
+  {% if indice %}
+    <span class="basis-full" data-indice="{{ indice }}">
+      <span class="text-muted">Ricerca per significato:</span>
+      {% if indice == "pronto" %}<span class="text-emerald-300">indicizzato</span> <span class="text-muted">· {{ v.passaggi_indicizzati }} passagg{{ v.passaggi_indicizzati|pluralize:"io,i" }} · {{ v.indexed_at|date:"d/m/Y H:i" }}</span>
+      {% elif indice == "vuoto" %}<span class="text-muted">nessun testo da indicizzare</span>
+      {% elif indice == "attesa" %}<span class="text-sky-300">in attesa</span>
+      {% elif indice == "corso" %}<span class="text-sky-300">indicizzazione in corso…</span>
+      {% else %}<span class="text-red-300">non riuscita</span>{% endif %}
+      {% if puo_rielaborare and indice == "fallito" or puo_rielaborare and indice == "attesa" %}
+        <button type="button" hx-post="{% url 'documents:version_reindex' documento.pk v.version_number %}"
+                hx-target="#elab-{{ v.pk }}" hx-swap="outerHTML"
+                class="ml-1 text-indigo-300 hover:text-indigo-200">{% if indice == "fallito" %}Riprova{% else %}Avvia ora{% endif %}</button>
+      {% endif %}
+    </span>
+  {% endif %}
+  {% endwith %}
+</div>

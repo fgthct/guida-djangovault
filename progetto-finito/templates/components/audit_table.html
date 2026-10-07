@@ -1,0 +1,36 @@
+{# Tabella del registro. Uso: {% include "components/audit_table.html" with pagina=pagina mostra_oggetto=True %} #}
+<div class="overflow-x-auto rounded-2xl border border-line bg-surface">
+<table class="w-full text-left text-sm">
+  <thead class="border-b border-line text-xs uppercase tracking-wide text-muted">
+    <tr>
+      <th scope="col" class="px-4 py-3 font-medium">Quando</th>
+      <th scope="col" class="px-4 py-3 font-medium">Utente</th>
+      <th scope="col" class="px-4 py-3 font-medium">Azione</th>
+      {% if mostra_oggetto %}<th scope="col" class="px-4 py-3 font-medium">Oggetto</th>{% endif %}
+      <th scope="col" class="px-4 py-3 font-medium">Dettagli</th>
+      <th scope="col" class="hidden px-4 py-3 font-medium lg:table-cell">IP</th>
+    </tr>
+  </thead>
+  <tbody class="divide-y divide-line">
+    {% for v in pagina %}
+    <tr>
+      <td class="whitespace-nowrap px-4 py-3 align-top text-muted">{{ v.timestamp|date:"d/m/Y H:i:s" }}</td>
+      <td class="px-4 py-3 align-top">{{ v.username|default:"—" }}</td>
+      <td class="whitespace-nowrap px-4 py-3 align-top">{{ v.etichetta }}</td>
+      {% if mostra_oggetto %}<td class="px-4 py-3 align-top text-muted">{{ v.object_repr|default:"—" }}</td>{% endif %}
+      <td class="px-4 py-3 align-top text-muted">{{ v.testo }}</td>
+      <td class="hidden whitespace-nowrap px-4 py-3 align-top text-muted lg:table-cell">{{ v.ip_address|default:"—" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="px-4 py-8 text-center text-muted">Nessuna operazione registrata.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if pagina.paginator.num_pages > 1 %}
+<nav class="mt-4 flex items-center gap-3 text-sm text-muted" aria-label="Paginazione">
+  {% if pagina.has_previous %}<a href="?{% if gruppo %}gruppo={{ gruppo }}&amp;{% endif %}page={{ pagina.previous_page_number }}" class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface-2">Precedente</a>{% endif %}
+  <span>Pagina {{ pagina.number }} di {{ pagina.paginator.num_pages }}</span>
+  {% if pagina.has_next %}<a href="?{% if gruppo %}gruppo={{ gruppo }}&amp;{% endif %}page={{ pagina.next_page_number }}" class="rounded-lg border border-line px-3 py-1.5 hover:bg-surface-2">Successiva</a>{% endif %}
+</nav>
+{% endif %}

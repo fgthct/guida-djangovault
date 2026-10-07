@@ -1,0 +1,3 @@
+htmx.org      2.0.11   (htmx.min.js)
+@alpinejs/csp 3.17.4   (alpine-csp.min.js, build compatibile con la Content Security Policy)
+Aggiornare con: ./scripts/vendor_update.sh

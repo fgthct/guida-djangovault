@@ -1,0 +1,50 @@
+{% extends "app.html" %}
+
+{% block title %}Invia in revisione · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'documents:list' %}" class="hover:text-fg">Documenti</a> / <a href="{{ documento.get_absolute_url }}" class="hover:text-fg">{{ documento.title|truncatechars:30 }}</a> / Revisione{% endblock %}
+
+{% partialdef riga %}
+<div class="grid gap-3 sm:grid-cols-2">
+  <div>
+    <label class="mb-1 block text-xs text-muted">Persona</label>
+    <select name="revisore" class="w-full rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-fg">
+      <option value="">— nessuna —</option>
+      {% for valore, nome in form.utenti %}<option value="{{ valore }}"{% if valore == r.revisore %} selected{% endif %}>{{ nome }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="mb-1 block text-xs text-muted">Ruolo (facoltativo)</label>
+    <input type="text" name="ruolo" maxlength="80" value="{{ r.ruolo }}" placeholder="es. Responsabile acquisti" class="w-full rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-muted">
+  </div>
+</div>
+{% endpartialdef %}
+
+{% block content %}
+<div class="max-w-2xl rounded-2xl border border-line bg-surface p-6 shadow-lg shadow-black/20">
+  <h1 class="text-xl font-semibold">Invia «{{ documento.title }}» in revisione</h1>
+  <p class="mt-2 text-sm text-muted">Scegli tu chi deve esprimersi: solo queste persone potranno approvare o rimandare. Durante la revisione il documento è bloccato.</p>
+  <form method="post" class="mt-6 space-y-5">
+    {% csrf_token %}
+    {% for errore in form.non_field_errors %}{% include "components/alert.html" with tag="error" testo=errore %}{% endfor %}
+    <div id="righe" class="space-y-4">
+      {% for r in form.righe %}{% partial riga %}{% endfor %}
+    </div>
+    <button type="button" hx-get="{% url 'documents:review_row' documento.pk %}" hx-target="#righe" hx-swap="beforeend" class="rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-sm text-fg hover:bg-line">+ Aggiungi una persona</button>
+    <div>
+      <label for="{{ form.messaggio.id_for_label }}" class="mb-1 block text-sm font-medium text-fg">{{ form.messaggio.label }}</label>
+      <textarea name="messaggio" id="{{ form.messaggio.id_for_label }}" rows="3" maxlength="1000" class="w-full rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-fg placeholder:text-muted" placeholder="es. Controlla il capitolo 3, e dite se manca qualcosa">{{ form.messaggio.value|default:"" }}</textarea>
+      <p class="mt-1 text-xs text-muted">{{ form.messaggio.help_text }}</p>
+      {% for errore in form.messaggio.errors %}<p class="mt-1 text-sm text-red-400">{{ errore }}</p>{% endfor %}
+    </div>
+    <div class="rounded-lg border border-line bg-surface-2 p-4">
+      <label class="flex items-center gap-2 text-sm font-medium text-fg">{{ form.sequenziale }} {{ form.sequenziale.label }}</label>
+      <p class="mt-1 text-xs text-muted">{{ form.sequenziale.help_text }}</p>
+    </div>
+    <p class="text-xs text-muted">Chi non ha ancora accesso al documento riceve automaticamente la lettura.</p>
+    <div class="flex gap-3">
+      <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">Avvia la revisione</button>
+      <a href="{{ documento.get_absolute_url }}" class="rounded-lg border border-line px-4 py-2 text-sm text-muted hover:bg-surface-2">Annulla</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

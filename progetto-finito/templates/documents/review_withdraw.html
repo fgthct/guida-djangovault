@@ -1,0 +1,19 @@
+{% extends "app.html" %}
+
+{% block title %}Ritira la revisione · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'documents:list' %}" class="hover:text-fg">Documenti</a> / <a href="{{ documento.get_absolute_url }}" class="hover:text-fg">{{ documento.title|truncatechars:30 }}</a> / Ritira{% endblock %}
+
+{% block content %}
+<div class="max-w-lg rounded-2xl border border-line bg-surface p-6 shadow-lg shadow-black/20">
+  <h1 class="text-xl font-semibold">Ritira la revisione</h1>
+  <p class="mt-2 text-sm text-muted">«{{ documento.title }}» torna in Bozza; le approvazioni date finora decadono e i revisori vengono avvisati.</p>
+  <form method="post" class="mt-6 space-y-5">
+    {% csrf_token %}
+    {% for campo in form %}{% include "components/field.html" with campo=campo %}{% endfor %}
+    <div class="flex gap-3">
+      <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">Ritira</button>
+      <a href="{{ documento.get_absolute_url }}" class="rounded-lg border border-line px-4 py-2 text-sm text-muted hover:bg-surface-2">Annulla</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

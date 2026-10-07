@@ -1,0 +1,136 @@
+# DjangoVault in produzione: Nginx davanti, Daphne (HTTP + WebSocket), worker, Postgres e Redis non esposti.
+#
+#   ./scripts/prod.sh init      crea .env.prod con segreti casuali (poi si modifica a mano)
+#   ./scripts/prod.sh up        costruisce e avvia
+#
+# Progetto e volumi separati da quelli di sviluppo (compose.yml): niente collisioni sulla stessa macchina.
+name: djangovault-prod
+
+x-app: &app
+  build:
+    context: .
+    args:
+      INSTALL_LIBREOFFICE: ${INSTALL_LIBREOFFICE:-0}
+  image: djangovault-app:prod
+  restart: always
+  user: "1000:1000"
+  env_file: .env.prod
+  environment: &app-env
+    DB_HOST: postgres
+    DB_PORT: "5432"
+    REDIS_URL: redis://redis:6379/0
+    HF_HOME: /models
+    DJANGO_DEBUG: "0"
+    # Il controllo di salute di Docker chiama l'app da dentro il contenitore.
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?imposta DJANGO_ALLOWED_HOSTS in .env.prod},127.0.0.1,localhost
+    AUDIT_TRUST_X_FORWARDED_FOR: "1"  # c'è Nginx davanti e sovrascrive X-Forwarded-For
+  volumes:
+    # Niente bind mount del codice: l'immagine è quella che gira.
+    - media_data:/app/media
+    - models_cache:/models
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "5"}
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-djangovault}
+      POSTGRES_USER: ${DB_USER:-djangovault}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?imposta DB_PASSWORD in .env.prod}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  django:
+    <<: *app
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    command: >
+      sh -c "python manage.py migrate --noinput
+      && python manage.py collectstatic --noinput --verbosity 0
+      && daphne --proxy-headers --access-log - -b 0.0.0.0 -p 8000 config.asgi:application"
+    volumes:
+      - media_data:/app/media
+      - models_cache:/models
+      - static_data:/app/staticfiles
+      - ./inbox:/app/inbox  # file in arrivo (importa_cartella)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  worker:
+    <<: *app
+    depends_on:
+      django: {condition: service_healthy}  # le migrazioni sono già state applicate
+    command: celery -A config worker -B --schedule /tmp/celerybeat-schedule -l info --concurrency=${DV_WORKER_CONCURRENCY:-2} -n worker@%h
+    volumes:
+      - media_data:/app/media
+      - models_cache:/models
+      - ./inbox:/app/inbox  # cartella osservata (inbox/arrivi): la legge il worker
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d worker@$$(hostname) --timeout 5"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: always
+    depends_on:
+      django: {condition: service_healthy}
+    ports:
+      - "${DV_BIND:-0.0.0.0}:${DV_HTTP_PORT:-80}:80"
+      - "${DV_BIND:-0.0.0.0}:${DV_HTTPS_PORT:-443}:443"
+    environment:
+      DV_SERVER_NAME: ${DV_SERVER_NAME:-_}
+      DV_NGINX_MAX_BODY: ${DV_NGINX_MAX_BODY:-60m}
+    volumes:
+      # L'immagine ufficiale sostituisce le variabili ${...} dei file in /etc/nginx/templates.
+      - ./deploy/nginx/${DV_NGINX_MODE:-http}.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./deploy/nginx/common.conf:/etc/nginx/snippets/dv-common.conf:ro
+      - ./deploy/nginx/locations.conf:/etc/nginx/snippets/dv-locations.conf:ro
+      - ./deploy/nginx/proxy.conf:/etc/nginx/snippets/dv-proxy.conf:ro
+      - static_data:/srv/static:ro
+      - ${DV_CERTS_DIR:-./deploy/certs}:/etc/nginx/certs:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/nginx-health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "5"}
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_data:
+  models_cache:
+  static_data:

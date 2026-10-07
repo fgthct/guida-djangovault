@@ -1,0 +1,19 @@
+{% extends "app.html" %}
+
+{% block title %}{% if nuovo %}Nuovo documento{% else %}Modifica{% endif %} · DjangoVault{% endblock %}
+{% block header %}<a href="{% url 'documents:list' %}" class="hover:text-fg">Documenti</a> / {% if nuovo %}Nuovo{% else %}Modifica{% endif %}{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold tracking-tight">{% if nuovo %}Carica documento{% else %}Modifica documento{% endif %}</h1>
+
+<form method="post" {% if nuovo %}enctype="multipart/form-data"{% endif %} class="mt-6 max-w-2xl space-y-5 rounded-2xl border border-line bg-surface p-6 shadow-lg shadow-black/20">
+  {% csrf_token %}
+  {% for errore in form.non_field_errors %}{% include "components/alert.html" with tag="error" testo=errore %}{% endfor %}
+  {% for campo in form %}{% include "components/field.html" with campo=campo %}{% endfor %}
+  {% if not nuovo %}<p class="text-xs text-muted">Il file non si modifica da qui: per sostituirlo usa <a href="{% url 'documents:version_create' documento.pk %}" class="text-indigo-300 hover:text-indigo-200">Nuova versione</a>.</p>{% endif %}
+  <div class="flex gap-3">
+    <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-indigo-50 hover:bg-indigo-500">{% if nuovo %}Carica{% else %}Salva{% endif %}</button>
+    <a href="{% if nuovo %}{% url 'documents:list' %}{% else %}{{ documento.get_absolute_url }}{% endif %}" class="rounded-lg border border-line px-4 py-2 text-sm text-muted hover:bg-surface-2">Annulla</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/* Dove Tailwind cerca le classi usate: template, widget definiti in Python e JS. */
+@source "../../templates";
+@source "../../accounts";
+@source "../../core";
+@source "../../documents";
+@source "../../static/js";
+
+/* ------------------------------------------------------------------
+   Tema scuro (unico tema, nessuno sfondo bianco: scelta di progetto).
+   Colori pensati per affaticare poco la vista: sfondi scuri non neri,
+   testo chiaro ma non bianco puro. Nei template si usano SOLO questi
+   token (bg-page, bg-surface, text-fg...) e mai colori "chiari" di
+   Tailwind: un test (core/tests/test_tema.py) lo verifica.
+   ------------------------------------------------------------------ */
+@theme {
+  --color-page: #111318;       /* sfondo pagina */
+  --color-rail: #0c0e13;       /* barra laterale, campi di input */
+  --color-surface: #1a1d26;    /* schede, pannelli */
+  --color-surface-2: #232733;  /* hover, elementi attivi */
+  --color-line: #2c3140;       /* bordi e divisori */
+  --color-fg: #d7dae3;         /* testo principale */
+  --color-muted: #98a0b3;      /* testo secondario */
+}
+
+@layer base {
+  html {
+    color-scheme: dark; /* barre di scorrimento, campi, autofill scuri anche nel browser */
+    background-color: var(--color-page);
+    color: var(--color-fg);
+  }
+  ::selection {
+    background-color: rgb(99 102 241 / 0.45);
+  }
+}
+
+/* HTMX: stile degli indicatori di caricamento.
+   Con la CSP niente <style> inline, quindi lo definiamo qui
+   (htmx è configurato con includeIndicatorStyles=false). */
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity 200ms ease-in;
+}
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  opacity: 1;
+}
+
+/* Alpine: nasconde gli elementi x-cloak finché Alpine non è partito. */
+[x-cloak] {
+  display: none !important;
+}
+
+/* Anteprima di una pagina di documento (sfondo bianco): inversione morbida per il tema scuro.
+   Il bianco diventa un grigio molto scuro, il testo nero un grigio chiaro; i colori restano riconoscibili. */
+.anteprima-scura {
+  filter: invert(0.92) hue-rotate(180deg);
+}
+
+/* Evidenziazione dei risultati di ricerca (tema scuro: niente giallo pieno su nero). */
+mark {
+  background-color: rgb(251 191 36 / 0.22);
+  color: #fcd34d;
+  border-radius: 0.25rem;
+  padding: 0 0.125rem;
+}
+
+
+/* Risposte dell'assistente: HTML prodotto dal server (assistant/rendering.py), con pochi tag noti. */
+.risposta p + p,
+.risposta p + ul,
+.risposta ul + p {
+  margin-top: 0.6rem;
+}
+.risposta ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.risposta code {
+  border-radius: 0.25rem;
+  background: rgb(255 255 255 / 0.08);
+  padding: 0.05rem 0.3rem;
+  font-size: 0.85em;
+}
+.risposta a.citazione {
+  color: rgb(165 180 252);
+  text-decoration: none;
+}
+.risposta a.citazione:hover {
+  text-decoration: underline;
+}

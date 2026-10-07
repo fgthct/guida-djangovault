@@ -1,0 +1,16 @@
+# Modo HTTP: per una rete interna, o dietro un altro proxy/tunnel che porta già il HTTPS (Cloudflare Tunnel,
+# Tailscale, un Nginx/Caddy davanti…). Con `DJANGO_SECURE_SSL=0` nel file .env.prod.
+include /etc/nginx/snippets/dv-common.conf;
+
+map $http_x_forwarded_proto $dv_scheme {
+    default $scheme;
+    https   https;
+}
+
+server {
+    listen 80 default_server;
+    server_name ${DV_SERVER_NAME};
+    client_max_body_size ${DV_NGINX_MAX_BODY};
+    location = /nginx-health { access_log off; return 200 "ok\n"; }
+    include /etc/nginx/snippets/dv-locations.conf;
+}
