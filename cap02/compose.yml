@@ -1,0 +1,91 @@
+name: djangovault
+
+# Configurazione comune dell'applicazione: stessa immagine per il sito e per il worker.
+x-app: &app
+  build:
+    context: .
+    args:
+      INSTALL_LIBREOFFICE: ${INSTALL_LIBREOFFICE:-0}
+  image: djangovault-app
+  restart: unless-stopped
+  env_file: .env
+  environment: &app-env
+    # Dentro Docker i servizi si raggiungono per nome, sulle porte interne.
+    DB_HOST: postgres
+    DB_PORT: "5432"
+    REDIS_URL: redis://redis:6379/0
+    HF_HOME: /models  # il modello per la ricerca per significato si scarica una volta e resta qui
+  volumes:
+    - .:/app
+    - media_data:/app/media
+    - models_cache:/models
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-djangovault}
+      POSTGRES_USER: ${DB_USER:-djangovault}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?imposta DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${DV_DB_PORT:-5440}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${DV_REDIS_PORT:-6390}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  django:
+    <<: *app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "${DV_BIND:-127.0.0.1}:${DV_WEB_PORT:-8100}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  # Elabora i file in background: testo, OCR, anteprime. Nessuna porta esposta.
+  # `-B` avvia anche il pianificatore che rimette in coda le elaborazioni rimaste ferme.
+  worker:
+    <<: *app
+    depends_on:
+      django:
+        condition: service_healthy  # le migrazioni sono già state applicate
+    command: celery -A config worker -B --schedule /tmp/celerybeat-schedule -l info --concurrency=${DV_WORKER_CONCURRENCY:-2} -n worker@%h
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d worker@$$(hostname) --timeout 5"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_data:
+  models_cache:
